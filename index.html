@@ -263,7 +263,7 @@ const T = {
   showing:"Menunjukkan", of:"daripada", moreBtn:"Tunjuk lagi", userHelp:"Pengguna log masuk dengan nama pengguna dan kata laluan ini. Satu akaun boleh digunakan di beberapa peranti serentak.",
   roleHelp:"Perancang: cipta & lepaskan job, tutup job. Penyelia Pengeluaran dan Operasi: kemas kini campuran, pembungkusan, pindahan, keputusan QC, sahkan pembaziran dan tandatangan laporan kerugian.",
   joAdd:"＋ Tambah JOB", joFill:"Isi berturutan dari JOB pertama", joDup:"Nombor JOB berulang ditanda merah.", joCount:"bilangan",
-  itemCode:"Kod Item", itemHelp:"Diisi sendiri daripada job terdahulu dengan produk yang sama, jika ada.",
+  editProduct:"Ubah produk", itemCode:"Kod Item", itemHelp:"Diisi sendiri daripada job terdahulu dengan produk yang sama, jika ada.",
   sum:"Jumlah", jobOrder:"No. JOB", bn:"B/N", batchOut:"Output kelompok", actFG:"Rekod output barang siap", uom:"UOM", qty:"Kuantiti", unitKg:"KG seunit",
   totalKg:"Jumlah KG", fgOut:"Output Pembungkusan / Barang Siap", perBatchHelp:"Isi KG sebenar bagi setiap kelompok (B/N). Kosongkan jika belum siap.",
   adminEdit:"Ubah (Admin)", adminHelp:"Admin boleh membetulkan semua medan, termasuk job lama. Semua perubahan direkod dalam Sejarah.",
@@ -315,7 +315,7 @@ const T = {
   showing:"Showing", of:"of", moreBtn:"Show more", userHelp:"Users sign in with this username and password. One account can be used on several devices at the same time.",
   roleHelp:"Planner: create & release jobs, close jobs. Production Supervisor and Operation: update mixing, packing, transfer, QC result, verify wastage and sign off loss reports.",
   joAdd:"＋ Add JOB", joFill:"Fill in sequence from first JOB", joDup:"Duplicate JOB numbers are marked red.", joCount:"count",
-  itemCode:"Item Code", itemHelp:"Filled in from the last job with the same product, if there is one.",
+  editProduct:"Edit product", itemCode:"Item Code", itemHelp:"Filled in from the last job with the same product, if there is one.",
   sum:"Total", jobOrder:"JOB No.", bn:"B/N", batchOut:"Batch output", actFG:"Record finished goods output", uom:"UOM", qty:"Quantity", unitKg:"KG per unit",
   totalKg:"Total KG", fgOut:"Packing / Finished Goods Output", perBatchHelp:"Enter the actual KG for each batch (B/N). Leave blank if not done yet.",
   adminEdit:"Edit (Admin)", adminHelp:"Admin can correct every field, including old jobs. All changes are recorded in History.",
@@ -639,6 +639,7 @@ async function openJob(id, keepScroll){
   if(isP && ["PLANNING","RELEASED"].includes(st)) acts.push(["cancel",t("actCancel"),"danger"]);
   if(isA && st==="CANCELLED") acts.push(["unrelease",t("actUnrelease"),"ghost"]);
   if(role!=="viewer" && st!=="CANCELLED") acts.push(["reportloss","⚠ "+t("reportLoss"),"ghost"]);
+  if((role==="operation" || (role==="planner" && !["PLANNING","RELEASED"].includes(st))) && st!=="CANCELLED") acts.push(["editproduct","✎ "+t("editProduct"),"ghost"]);
   if(isA) acts.push(["adminedit","✎ "+t("adminEdit"),"ghost"]);
   const jl = S.losses.filter(l=>l.job_id===j.id);
   const bts = batchesOf(j.id);
@@ -728,6 +729,12 @@ async function doAction(j, act){
       }
       case "pack": return packForm(j, done);
       case "adminedit": return adminEditForm(j);
+      case "editproduct": {
+        const products = [...new Set(S.jobs.map(x=>x.product))].sort();
+        const bg = formSheet(`${t("editProduct")} · ${esc(j.job_no)}`, [{k:"p",label:t("product"),v:j.product,req:true}], v => done({ product: v.p.trim().toUpperCase() }));
+        const inp = $("#f_p"); inp.setAttribute("list","dl_pp"); inp.insertAdjacentHTML("afterend", `<datalist id="dl_pp">${products.map(x=>`<option value="${esc(x)}">`).join("")}</datalist>`);
+        return bg;
+      }
       case "done": {
         if(j.mixing_output==null){ toast(t("actMix"), true); return doAction(j,"mix"); }
         if(!j.bulk_packing && j.packing_output==null){ toast(t("actPack"), true); return doAction(j,"pack"); }
