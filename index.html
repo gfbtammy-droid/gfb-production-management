@@ -258,7 +258,7 @@ const T = {
   MIXING:"Campuran", PACKING:"Pembungkusan", TRANSFER:"Pindahan / Stor", RAW_MATERIAL:"Bahan Mentah",
   SPILLAGE:"Tumpahan", TORN_BAG:"Beg koyak", DAMAGED_PACK:"Pek rosak / jatuh", MACHINE_FAULT:"Kerosakan mesin", CONTAMINATION:"Pencemaran", RESIDUE:"Sisa / sapuan", OTHER:"Lain-lain",
   DISPOSE:"Buang", REWORK:"Proses semula", QUARANTINE:"Kuarantin", RETURN_TO_STOCK:"Kembali ke stok",
-  sharedPack:"JO pembungkusan", c_date:"Tarikh", c_machine:"Mesin", c_product:"Produk", c_batch:"Kg × Klpk", c_total:"Jumlah KG", c_jo:"JO", c_mix:"Campuran", c_pack:"Bungkus", c_var:"Varians", c_status:"Status", none:"Tiada", today:"Hari ini", lockedPlan:"Pelan dikunci selepas pengeluaran bermula."
+  sharedPack:"JO pembungkusan", c_project:"Projek", c_remark:"Catatan", c_date:"Tarikh", c_machine:"Mesin", c_product:"Produk", c_batch:"Kg × Klpk", c_total:"Jumlah KG", c_jo:"JO", c_mix:"Campuran", c_pack:"Bungkus", c_var:"Varians", c_status:"Status", none:"Tiada", today:"Hari ini", lockedPlan:"Pelan dikunci selepas pengeluaran bermula."
  },
  en:{
   appName:"GFB Production Management", login:"Sign In", username:"Username", password:"Password", signIn:"Sign in",
@@ -303,7 +303,7 @@ const T = {
   MIXING:"Mixing", PACKING:"Packing", TRANSFER:"Transfer / Store", RAW_MATERIAL:"Raw Material",
   SPILLAGE:"Spillage", TORN_BAG:"Torn bag", DAMAGED_PACK:"Damaged / dropped pack", MACHINE_FAULT:"Machine fault", CONTAMINATION:"Contamination", RESIDUE:"Residue / sweepings", OTHER:"Other",
   DISPOSE:"Dispose", REWORK:"Rework", QUARANTINE:"Quarantine", RETURN_TO_STOCK:"Return to stock",
-  sharedPack:"Packing JO", c_date:"Date", c_machine:"Machine", c_product:"Product", c_batch:"Kg × Batch", c_total:"Total KG", c_jo:"JO", c_mix:"Mixed", c_pack:"Packed", c_var:"Var.", c_status:"Status", none:"None", today:"Today", lockedPlan:"Plan is locked once production starts."
+  sharedPack:"Packing JO", c_project:"Project", c_remark:"Remark", c_date:"Date", c_machine:"Machine", c_product:"Product", c_batch:"Kg × Batch", c_total:"Total KG", c_jo:"JO", c_mix:"Mixed", c_pack:"Packed", c_var:"Var.", c_status:"Status", none:"None", today:"Today", lockedPlan:"Plan is locked once production starts."
  }
 };
 const store = { get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}} };
@@ -517,7 +517,7 @@ function renderJobs(m){
 }
 const isDesk = () => window.matchMedia("(min-width:900px)").matches;
 const COLS = [
-  ["job_no","Job"],["plan_date","c_date"],["machine","c_machine"],["product","c_product"],["customer","customer"],
+  ["job_no","c_project"],["plan_date","c_date"],["machine","c_machine"],["product","c_product"],["notes","c_remark"],
   ["batches","c_batch",1],["total_planned","c_total",1],["jo","c_jo"],["mixing_output","c_mix",1],["packing_output","c_pack",1],["var","c_var",1],["status","c_status"]
 ];
 function sortVal(j,k){
@@ -540,7 +540,7 @@ function jobTable(rows){
   ${rows.map(j=>{ const v=varPct(j); const ov=overTarget(j);
     return `<tr data-id="${j.id}">
       <td><b>${esc(j.job_no)}</b></td><td>${fd(j.plan_date)}</td><td>${esc(j.machine)}</td>
-      <td class="wrapc">${esc(j.product)}${j.notes?`<div class="muted small">${esc(j.notes)}</div>`:""}</td><td class="wrapc">${esc(j.customer||"-")}</td>
+      <td class="wrapc">${esc(j.product)}</td><td class="wrapc">${j.notes||j.remarks?`${esc(j.notes||"")}${j.notes&&j.remarks?"<br>":""}${j.remarks?`<span class="muted small">${esc(j.remarks)}</span>`:""}`:'<span class="muted">-</span>'}</td>
       <td class="n">${nf(j.batch_qty, j.batch_qty%1?2:0)} × ${j.batches}</td><td class="n"><b>${nf(j.total_planned, j.total_planned%1?2:0)}</b></td>
       <td>${esc(jo(j.jo_mix))}${(j.jo_pack||[]).length?`<div class="muted small">P: ${esc(j.jo_pack.join(", "))}</div>`:""}</td>
       <td class="n">${j.mixing_output!=null?nf(j.mixing_output, j.mixing_output%1?2:0):"-"}</td>
