@@ -627,12 +627,11 @@ async function openJob(id, keepScroll){
    <div class="card sec">
      <div style="font-size:18px;font-weight:700;margin-bottom:6px">${esc(j.product)}</div>
      <dl class="kv">
-      <dt>${t("customer")}</dt><dd>${esc(j.customer||"-")}</dd>
+      <dt>${t("c_remark")}</dt><dd>${esc(j.notes||"-")}</dd>
       <dt>${t("machine")}</dt><dd>${esc(j.machine)}</dd>
       <dt>${t("planDate")}</dt><dd>${fd(j.plan_date)}</dd>
       <dt>${t("batchQty")}</dt><dd>${nf(j.batch_qty, j.batch_qty%1?2:0)} × ${j.batches}</dd>
       <dt>${t("total")}</dt><dd>${kg(j.total_planned)}</dd>
-      ${j.notes?`<dt>${t("notes")}</dt><dd>${esc(j.notes)}</dd>`:""}
      </dl>
    </div>
    <div class="card sec"><h3>${t("joMix")} (${(j.jo_mix||[]).length})</h3>
