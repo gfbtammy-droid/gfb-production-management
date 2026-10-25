@@ -178,7 +178,7 @@ table.jobs th{position:sticky;top:0;z-index:1;background:var(--card);text-align:
 table.jobs th:hover{color:var(--ink)}
 table.jobs th.n,table.jobs td.n{text-align:right}
 table.jobs td{padding:8px 8px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
-table.jobs td.wrapc{white-space:normal;min-width:120px;max-width:200px}
+table.jobs td.wrapc{white-space:normal;min-width:110px;max-width:170px}
 table.jobs td:first-child,table.jobs th:first-child{padding-left:14px}
 table.jobs td:last-child,table.jobs th:last-child{padding-right:14px}
 table.jobs tbody tr{cursor:pointer}
@@ -279,7 +279,7 @@ const T = {
   MIXING:"Campuran", PACKING:"Pembungkusan", TRANSFER:"Pindahan / Stor", RAW_MATERIAL:"Bahan Mentah",
   SPILLAGE:"Tumpahan", TORN_BAG:"Beg koyak", DAMAGED_PACK:"Pek rosak / jatuh", MACHINE_FAULT:"Kerosakan mesin", CONTAMINATION:"Pencemaran", RESIDUE:"Sisa / sapuan", OTHER:"Lain-lain",
   DISPOSE:"Buang", REWORK:"Proses semula", QUARANTINE:"Kuarantin", RETURN_TO_STOCK:"Kembali ke stok",
-  sharedPack:"JOB pembungkusan", c_project:"Projek", c_remark:"Catatan", c_plan:"Tarikh Pelan", c_rel:"Tarikh Lepas", c_done:"Tarikh Siap", c_date:"Tarikh", c_machine:"Mesin", c_product:"Produk", c_batch:"Kg × Klpk", c_total:"Jumlah KG", c_jo:"JOB", c_mix:"Campuran", c_pack:"Bungkus", c_var:"Varians", c_status:"Status", none:"Tiada", today:"Hari ini", lockedPlan:"Pelan dikunci selepas pengeluaran bermula."
+  sharedPack:"JOB pembungkusan", c_project:"Projek", c_remark:"Catatan", c_plan:"Tarikh Pelan", c_rel:"Tarikh Lepas", c_done:"Tarikh Siap", s_plan:"Pelan", s_rel:"Lepas", s_done:"Siap", c_date:"Tarikh", c_machine:"Mesin", c_product:"Produk", c_batch:"Kg × Klpk", c_total:"KG", c_jo:"JOB", c_mix:"Campuran", c_pack:"Bungkus", c_var:"Varians", c_status:"Status", none:"Tiada", today:"Hari ini", lockedPlan:"Pelan dikunci selepas pengeluaran bermula."
  },
  en:{
   appName:"GFB Production Management", login:"Sign In", username:"Username", password:"Password", signIn:"Sign in",
@@ -330,7 +330,7 @@ const T = {
   MIXING:"Mixing", PACKING:"Packing", TRANSFER:"Transfer / Store", RAW_MATERIAL:"Raw Material",
   SPILLAGE:"Spillage", TORN_BAG:"Torn bag", DAMAGED_PACK:"Damaged / dropped pack", MACHINE_FAULT:"Machine fault", CONTAMINATION:"Contamination", RESIDUE:"Residue / sweepings", OTHER:"Other",
   DISPOSE:"Dispose", REWORK:"Rework", QUARANTINE:"Quarantine", RETURN_TO_STOCK:"Return to stock",
-  sharedPack:"JOB Packing", c_project:"Project", c_remark:"Remark", c_plan:"Plan Date", c_rel:"Release Date", c_done:"Done Date", c_date:"Date", c_machine:"Machine", c_product:"Product", c_batch:"Kg × Batch", c_total:"Total KG", c_jo:"JOB", c_mix:"Mixed", c_pack:"Packed", c_var:"Var.", c_status:"Status", none:"None", today:"Today", lockedPlan:"Plan is locked once production starts."
+  sharedPack:"JOB Packing", c_project:"Project", c_remark:"Remark", c_plan:"Plan Date", c_rel:"Release Date", c_done:"Done Date", s_plan:"Plan", s_rel:"Released", s_done:"Done", c_date:"Date", c_machine:"Machine", c_product:"Product", c_batch:"Kg × Batch", c_total:"KG", c_jo:"JOB", c_mix:"Mixed", c_pack:"Packed", c_var:"Var.", c_status:"Status", none:"None", today:"Today", lockedPlan:"Plan is locked once production starts."
  }
 };
 const store = { get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}} };
@@ -353,6 +353,7 @@ const MS_MON = ["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Ogo","Sep","Okt","Nov
 const EN_MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const mon = i => (LANG==="ms"?MS_MON:EN_MON)[i];
 const fd = d => { if(!d) return "-"; const [y,m,dd] = d.slice(0,10).split("-"); return `${dd}/${m}/${y}`; };
+const fds = d => { if(!d) return "-"; const [y,m,dd] = d.slice(0,10).split("-"); return `${dd}/${m}/${y.slice(2)}`; };
 const fdt = ts => { if(!ts) return "-"; const d=new Date(ts); return d.toLocaleDateString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"Asia/Kuala_Lumpur"})+" "+d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kuala_Lumpur"}); };
 const today = () => new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kuala_Lumpur"});
 const ym = d => d ? d.slice(0,7) : null;
@@ -557,7 +558,7 @@ function renderJobs(m){
 const isDesk = () => window.matchMedia("(min-width:900px)").matches;
 const COLS = [
   ["job_no","c_project"],["plan_date","c_plan"],["date_released","c_rel"],["date_done","c_done"],["machine","c_machine"],["product","c_product"],["notes","c_remark"],
-  ["batches","c_batch",1],["total_planned","c_total",1],["jo","c_jo"],["mixing_output","c_mix",1],["packing_output","c_pack",1],["var","c_var",1],["status","c_status"]
+  ["total_planned","c_total",1],["jo","c_jo"],["mixing_output","c_mix",1],["packing_output","c_pack",1],["var","c_var",1]
 ];
 function sortVal(j,k){
   if(k==="job_no") return j.id; if(k==="var") return varPct(j) ?? -999; if(k==="status") return STEP[j.status];
@@ -578,14 +579,14 @@ function jobTable(rows){
   return `<div class="card tbl-wrap"><table class="jobs"><thead><tr>${COLS.map(([k,l,n])=>`<th data-sort="${k}" class="${n?"n":""}">${esc(t(l))}${arrow(k)}</th>`).join("")}</tr></thead><tbody>
   ${rows.map(j=>{ const v=varPct(j); const ov=overTarget(j);
     return `<tr data-id="${j.id}">
-      <td><b>${esc(j.job_no)}</b></td><td>${fd(j.plan_date)}</td><td>${j.date_released?fd(j.date_released):'<span class="muted">-</span>'}</td><td>${j.date_done?fd(j.date_done):'<span class="muted">-</span>'}</td><td>${esc(j.machine)}</td>
+      <td><b>${esc(j.job_no)}</b><div style="margin-top:3px">${badge(j.status)}</div></td><td>${fds(j.plan_date)}</td><td>${j.date_released?fds(j.date_released):'<span class="muted">-</span>'}</td><td>${j.date_done?fds(j.date_done):'<span class="muted">-</span>'}</td><td style="white-space:normal;min-width:80px;max-width:110px">${esc(j.machine)}</td>
       <td class="wrapc">${esc(j.product)}</td><td class="wrapc">${j.notes||j.remarks?`${esc(j.notes||"")}${j.notes&&j.remarks?"<br>":""}${j.remarks?`<span class="muted small">${esc(j.remarks)}</span>`:""}`:'<span class="muted">-</span>'}</td>
-      <td class="n">${nf(j.batch_qty, j.batch_qty%1?2:0)} × ${j.batches}</td><td class="n"><b>${nf(j.total_planned, j.total_planned%1?2:0)}</b></td>
+      <td class="n"><b>${nf(j.total_planned, j.total_planned%1?2:0)}</b><div class="muted small">${nf(j.batch_qty, j.batch_qty%1?2:0)} × ${j.batches}</div></td>
       <td>${esc(jo(j.jo_mix))}${(j.jo_pack||[]).length?`<div class="muted small">P: ${esc(j.jo_pack.map(JO).join(", "))}</div>`:""}</td>
       <td class="n">${j.mixing_output!=null?nf(j.mixing_output, j.mixing_output%1?2:0):"-"}</td>
       <td class="n">${j.packing_output!=null?(j.pack_uom&&j.pack_uom!=="KG"&&j.pack_qty!=null?`${nf(j.pack_qty, j.pack_qty%1?2:0)} ${UOM_SHORT[j.pack_uom]}<div class="muted small">${nf(j.packing_output, j.packing_output%1?2:0)} KG</div>`:nf(j.packing_output, j.packing_output%1?2:0)):(j.bulk_packing?'<span class="muted small">BULK</span>':"-")}</td>
       <td class="n ${ov&&!j.wastage_cause?"bad-t":""}">${v!=null?pct(v,2):"-"}${ov&&!j.wastage_cause?" !":""}</td>
-      <td>${badge(j.status)}</td></tr>`; }).join("")}
+      </tr>`; }).join("")}
   </tbody></table></div>`;
 }
 function jobCard(j){
@@ -594,7 +595,7 @@ function jobCard(j){
   return `<button class="card job" data-id="${j.id}">
     <div class="top"><span class="no">${esc(j.job_no)}</span>${badge(j.status)}</div>
     <div class="prod">${esc(j.product)}</div>
-    <div class="meta"><span>${t("c_plan")}: <b>${fd(j.plan_date)}</b></span><span>${t("c_rel")}: <b>${j.date_released?fd(j.date_released):"-"}</b></span><span>${t("c_done")}: <b>${j.date_done?fd(j.date_done):"-"}</b></span></div>
+    <div class="meta"><span>${t("s_plan")} <b>${fds(j.plan_date)}</b></span><span>${t("s_rel")} <b>${j.date_released?fds(j.date_released):"-"}</b></span><span>${t("s_done")} <b>${j.date_done?fds(j.date_done):"-"}</b></span></div>
     <div class="meta"><span>${esc(j.customer||"-")}</span><span>${esc(j.machine)}</span><span>${nf(j.batch_qty, j.batch_qty%1?2:0)} × ${j.batches} = <b>${kg(j.total_planned)}</b></span></div>
     ${st>=0?`<div class="steps">${[0,1,2,3,4,5].map(i=>`<i class="${i<=st?"on":""}"></i>`).join("")}</div>`:""}
     ${v!=null?`<div class="meta" style="margin-top:4px"><span>${t("variance")}: <b>${kg(j.variance_kg)}</b> (${pct(v,2)})</span>${flag?`<span class="badge flag">${t("needCause")}</span>`:""}</div>`:""}
