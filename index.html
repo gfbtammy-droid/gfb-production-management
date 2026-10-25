@@ -242,7 +242,7 @@ const T = {
   joMix:"JOB Campuran", joPack:"JOB Pembungkusan", joAuto:"Nombor JOB akan dikeluarkan secara automatik semasa simpan.",
   mixing:"Campuran", packing:"Pembungkusan", output:"Output (KG)", date:"Tarikh",
   mixOut:"Output Campuran", packOut:"Output Pembungkusan", variance:"Varians", released:"Dilepaskan",
-  qc:"QC", qcResult:"Keputusan QC", toReq:"No. TO REQ", remarks:"Catatan",
+  operation:"Operasi", qc:"QC", qcResult:"Keputusan QC", toReq:"No. TO REQ", remarks:"Catatan",
   actRelease:"Lepaskan ke pengeluaran", actUnrelease:"Kembali ke perancangan", actStart:"Mula campuran",
   actMix:"Rekod output campuran", actPack:"Rekod output pembungkusan", actDone:"Tanda siap", actReopen:"Buka semula (dalam proses)",
   actTransfer:"Pindah ke stor (TO)", actQC:"Rekod keputusan QC", actClose:"Tutup job", actCancel:"Batalkan job", actEdit:"Ubah pelan",
@@ -261,7 +261,7 @@ const T = {
   exportCsv:"Muat turun CSV", loggedAs:"Log masuk sebagai", machines:"Mesin", addMachine:"Tambah mesin",
   jobCreated:"Job dicipta", pwMin:"Minimum 8 aksara", loading:"Memuatkan…", offline:"Luar talian - sedang menyambung semula",
   showing:"Menunjukkan", of:"daripada", moreBtn:"Tunjuk lagi", userHelp:"Pengguna log masuk dengan nama pengguna dan kata laluan ini. Satu akaun boleh digunakan di beberapa peranti serentak.",
-  roleHelp:"Perancang: cipta & lepaskan job, tutup job. Penyelia: kemas kini campuran, pembungkusan, pindahan. QC: keputusan QC & sahkan pembaziran.",
+  roleHelp:"Perancang: cipta & lepaskan job, tutup job. Penyelia Pengeluaran dan Operasi: kemas kini campuran, pembungkusan, pindahan, keputusan QC, sahkan pembaziran dan tandatangan laporan kerugian.",
   joAdd:"＋ Tambah JOB", joFill:"Isi berturutan dari JOB pertama", joDup:"Nombor JOB berulang ditanda merah.", joCount:"bilangan",
   itemCode:"Kod Item", itemHelp:"Diisi sendiri daripada job terdahulu dengan produk yang sama, jika ada.",
   sum:"Jumlah", jobOrder:"No. JOB", bn:"B/N", batchOut:"Output kelompok", actFG:"Rekod output barang siap", uom:"UOM", qty:"Kuantiti", unitKg:"KG seunit",
@@ -276,7 +276,7 @@ const T = {
   disposition:"Keputusan bahan", corrective:"Tindakan pembetulan", signOff:"Tandatangan keputusan", signedBy:"Ditandatangani oleh",
   closeReport:"Tutup laporan selepas simpan", OPEN:"Terbuka", lossesLinked:"Laporan kerugian", unexplained:"Varians tidak dijelaskan",
   reportedLoss:"Kerugian dilapor", explained:"Dijelaskan", lossByType:"Ikut jenis", lossByStage:"Ikut peringkat", lossMonth:"Kerugian dilapor bulan ini",
-  uploading:"Memuat naik gambar…", editReport:"Ubah laporan", dispHelp:"Hanya penyelia pengeluaran atau admin boleh menandatangani keputusan bahan.",
+  uploading:"Memuat naik gambar…", editReport:"Ubah laporan", dispHelp:"Hanya penyelia pengeluaran, operasi atau admin boleh menandatangani keputusan bahan.",
   MIXING:"Campuran", PACKING:"Pembungkusan", TRANSFER:"Pindahan / Stor", RAW_MATERIAL:"Bahan Mentah",
   SPILLAGE:"Tumpahan", TORN_BAG:"Beg koyak", DAMAGED_PACK:"Pek rosak / jatuh", MACHINE_FAULT:"Kerosakan mesin", CONTAMINATION:"Pencemaran", RESIDUE:"Sisa / sapuan", OTHER:"Lain-lain",
   DISPOSE:"Buang", REWORK:"Proses semula", QUARANTINE:"Kuarantin", RETURN_TO_STOCK:"Kembali ke stok",
@@ -294,7 +294,7 @@ const T = {
   joMix:"JOB Mixing", joPack:"JOB Packing", joAuto:"JOB numbers are issued automatically when you save.",
   mixing:"Mixing", packing:"Packing", output:"Output (KG)", date:"Date",
   mixOut:"Mixing Output", packOut:"Packing Output", variance:"Variance", released:"Released",
-  qc:"QC", qcResult:"QC Result", toReq:"TO REQ No.", remarks:"Remarks",
+  operation:"Operation", qc:"QC", qcResult:"QC Result", toReq:"TO REQ No.", remarks:"Remarks",
   actRelease:"Release to production", actUnrelease:"Back to planning", actStart:"Start mixing",
   actMix:"Record mixing output", actPack:"Record packing output", actDone:"Mark done", actReopen:"Reopen (in process)",
   actTransfer:"Transfer to store (TO)", actQC:"Record QC result", actClose:"Close job", actCancel:"Cancel job", actEdit:"Edit plan",
@@ -313,7 +313,7 @@ const T = {
   exportCsv:"Download CSV", loggedAs:"Signed in as", machines:"Machines", addMachine:"Add machine",
   jobCreated:"Job created", pwMin:"Minimum 8 characters", loading:"Loading…", offline:"Offline - reconnecting",
   showing:"Showing", of:"of", moreBtn:"Show more", userHelp:"Users sign in with this username and password. One account can be used on several devices at the same time.",
-  roleHelp:"Planner: create & release jobs, close jobs. Supervisor: update mixing, packing, transfer. QC: QC result & verify wastage.",
+  roleHelp:"Planner: create & release jobs, close jobs. Production Supervisor and Operation: update mixing, packing, transfer, QC result, verify wastage and sign off loss reports.",
   joAdd:"＋ Add JOB", joFill:"Fill in sequence from first JOB", joDup:"Duplicate JOB numbers are marked red.", joCount:"count",
   itemCode:"Item Code", itemHelp:"Filled in from the last job with the same product, if there is one.",
   sum:"Total", jobOrder:"JOB No.", bn:"B/N", batchOut:"Batch output", actFG:"Record finished goods output", uom:"UOM", qty:"Quantity", unitKg:"KG per unit",
@@ -328,7 +328,7 @@ const T = {
   disposition:"Disposition", corrective:"Corrective action", signOff:"Sign off disposition", signedBy:"Signed off by",
   closeReport:"Close report after saving", OPEN:"Open", lossesLinked:"Loss reports", unexplained:"Unexplained variance",
   reportedLoss:"Reported loss", explained:"Explained", lossByType:"By type", lossByStage:"By stage", lossMonth:"Reported losses this month",
-  uploading:"Uploading photos…", editReport:"Edit report", dispHelp:"Only a production supervisor or admin can sign off the disposition.",
+  uploading:"Uploading photos…", editReport:"Edit report", dispHelp:"Only a production supervisor, operation or admin can sign off the disposition.",
   MIXING:"Mixing", PACKING:"Packing", TRANSFER:"Transfer / Store", RAW_MATERIAL:"Raw Material",
   SPILLAGE:"Spillage", TORN_BAG:"Torn bag", DAMAGED_PACK:"Damaged / dropped pack", MACHINE_FAULT:"Machine fault", CONTAMINATION:"Contamination", RESIDUE:"Residue / sweepings", OTHER:"Other",
   DISPOSE:"Dispose", REWORK:"Rework", QUARANTINE:"Quarantine", RETURN_TO_STOCK:"Return to stock",
@@ -621,7 +621,7 @@ async function openJob(id, keepScroll){
   const prevScroll = keepScroll ? ($(".sheet")?.scrollTop||0) : 0;
   const v = varPct(j); const role = S.me.role; const st = j.status;
   const acts = [];
-  const isA = role==="admin", isP = role==="planner"||isA, isS = role==="supervisor"||isA, isQ = role==="qc"||isA;
+  const isA = role==="admin", isP = role==="planner"||isA, isS = role==="supervisor"||role==="operation"||isA, isQ = isS;
   if(isP && st==="PLANNING") acts.push(["release",t("actRelease"),"primary"]);
   if(isS && st==="RELEASED") acts.push(["start",t("actStart"),"primary"]);
   if(isS && ["IN PROCESS","DONE"].includes(st)) acts.push(["mix",t("actMix"),""]);
@@ -1107,7 +1107,7 @@ function renderLoss(m){
    <div class="toolbar"><h2 class="pg grow" style="margin:0">${t("lossTitle")}</h2>
      <select id="mon">${months.map(x=>`<option value="${x}" ${x===S.month?"selected":""}>${monLabel(x)}</option>`).join("")}</select>
      ${desk?`<button class="btn ghost" id="lcsv">${t("exportCsv")}</button>`:""}
-     ${can("admin","planner","supervisor","qc")?`<button class="btn primary" id="newL">+ ${t("reportLoss")}</button>`:""}</div>
+     ${can("admin","planner","supervisor","operation")?`<button class="btn primary" id="newL">+ ${t("reportLoss")}</button>`:""}</div>
    <div class="kpis">
      <div class="card kpi"><div class="l">${t("lossMonth")}</div><div class="v">${nf(total, total%1?2:0)}</div><div class="s">KG · ${inMonth.length}</div></div>
      <div class="card kpi"><div class="l">${t("OPEN")}</div><div class="v" style="${openN?"color:var(--warn)":""}">${openN}</div><div class="s">${t("dispHelp").split(".")[0]}</div></div>
@@ -1132,7 +1132,7 @@ const toMY = ts => new Date(ts).toLocaleString("sv-SE",{timeZone:"Asia/Kuala_Lum
 async function openLoss(id){
   const l = S.losses.find(x=>x.id===id); if(!l) return;
   const j = S.jobs.find(x=>x.id===l.job_id);
-  const canSign = can("admin","supervisor");
+  const canSign = can("admin","supervisor","operation");
   const canEdit = (l.status==="OPEN" && (l.reported_by===S.me.user_id || canSign)) || can("admin");
   const body = `
    <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="badge ${l.status==="OPEN"?"s-IN_PROCESS":"s-CLOSED"}">${t(l.status)}</span><span class="muted small">${fdt(l.occurred_at)}</span></div>
@@ -1280,8 +1280,8 @@ const GUIDE = {
   {id:"roles", roles:["all"], h:"3. Siapa buat apa", b:`
    <table class="t"><tr><th>Peranan</th><th>Boleh buat</th></tr>
    <tr><td><b>Perancang</b></td><td>Cipta, ubah, lepaskan dan batalkan job. Tutup job. Lapor kerugian.</td></tr>
-   <tr><td><b>Penyelia Pengeluaran</b></td><td>Mula campuran, rekod output, tanda siap, pindah ke stor, isi punca pembaziran, lapor kerugian, <b>tandatangan keputusan bahan</b>.</td></tr>
-   <tr><td><b>QC</b></td><td>Rekod keputusan QC (PASS / HOLD / FAIL), sahkan pembaziran, lapor kerugian.</td></tr>
+   <tr><td><b>Penyelia Pengeluaran</b></td><td>Mula campuran, rekod output, tanda siap, pindah ke stor, rekod keputusan QC, isi punca dan sahkan pembaziran, lapor kerugian, <b>tandatangan keputusan bahan</b>.</td></tr>
+   <tr><td><b>Operasi</b> (Pengawal Inventori Pengeluaran)</td><td>Sama seperti Penyelia Pengeluaran.</td></tr>
    <tr><td><b>Lihat Sahaja</b></td><td>Lihat semua maklumat. Tidak boleh ubah apa-apa.</td></tr>
    <tr><td><b>Admin</b></td><td>Semua di atas, serta urus pengguna, mesin dan tetapan.</td></tr></table>
    <p class="muted small">Butang yang anda lihat bergantung kepada peranan anda. Jika butang tiada, peranan anda tidak dibenarkan untuk langkah itu.</p>`},
@@ -1294,14 +1294,14 @@ const GUIDE = {
    <p><b>Nombor JOB dikeluarkan secara automatik</b>: satu JOB campuran bagi setiap kelompok dan satu JOB pembungkusan, dipapar sebagai JOB-xxxxx. JOB campuran juga nombor kelompok inventori (B/N). No. projek berjalan ialah W-xxxx. Jangan taip nombor JOB.</p>
    <p><b>Ubah pelan</b> hanya dibenarkan semasa Perancangan atau Dilepaskan. Jika kelompok ditambah, JOB baru ditambah sendiri. Selepas campuran bermula, pelan dikunci.</p>
    <p><b>Tutup job</b> apabila status Siap atau Dipindahkan. Jika pembaziran tidak dijelaskan melebihi sasaran, sistem minta punca dahulu.</p>`},
-  {id:"supervisor", roles:["supervisor","admin"], h:"5. Penyelia: kemas kini pengeluaran", b:`
+  {id:"supervisor", roles:["supervisor","operation","admin"], h:"5. Penyelia / Operasi: kemas kini pengeluaran", b:`
    <ol><li>Buka job yang <b>Dilepaskan</b> dan tekan <b>Mula campuran</b>. Tarikh hari ini diisi sendiri.</li>
    <li>Selepas campuran, tekan <b>Rekod output campuran</b> dan isi KG sebenar bagi <b>setiap kelompok (B/N)</b>. Nombor JOB campuran, contohnya JOB-20499, juga nombor kelompok inventori B/N 20499. Jumlah dikira sendiri.</li>
    <li>Selepas pembungkusan, tekan <b>Rekod output pembungkusan</b> (atau <b>Rekod output barang siap</b> untuk job pukal). Pilih UOM: KG, Pek, Beg atau Karton. Untuk Pek / Beg / Karton, isi juga KG seunit; sistem tukar kepada KG untuk kiraan pembaziran.</li>
    <li>Tekan <b>Tanda siap</b>. Sistem akan minta output yang belum diisi.</li>
    <li>Apabila dihantar ke stor, tekan <b>Pindah ke stor (TO)</b> dan isi No. TO REQ.</li></ol>
    <p>Jika varians melebihi sasaran, tekan <b>Isi punca pembaziran</b> dan tulis punca serta tindakan. Silap rekod? Tekan <b>Buka semula</b> semasa status Siap.</p>`},
-  {id:"qc", roles:["qc","admin"], h:"6. QC: keputusan dan pengesahan", b:`
+  {id:"qc", roles:["supervisor","operation","admin"], h:"6. Keputusan QC dan pengesahan pembaziran", b:`
    <ul><li>Buka job dan tekan <b>Rekod keputusan QC</b>: PASS, HOLD atau FAIL, dengan tarikh dan catatan.</li>
    <li><b>HOLD atau FAIL menyekat pemindahan ke stor</b> sehingga keputusan ditukar kepada PASS.</li>
    <li>Untuk job yang pembaziran melebihi sasaran dan sudah ada punca, tekan <b>Sahkan pembaziran</b>.</li></ul>`},
@@ -1319,7 +1319,7 @@ const GUIDE = {
    <li>Isi bahan, KG hilang, masa, apa yang berlaku dan tindakan segera.</li>
    <li>Ambil <b>gambar</b> terus dengan kamera telefon (maksimum 6).</li>
    <li>Simpan. Nombor LOSS-xxxx diberi automatik.</li></ol>
-   <p><b>Keputusan bahan</b> (Buang / Proses semula / Kuarantin / Kembali ke stok) ditandatangani oleh <b>penyelia pengeluaran atau admin</b> sahaja. Laporan tidak boleh ditutup tanpa keputusan, dan dikunci selepas ditutup.</p>
+   <p><b>Keputusan bahan</b> (Buang / Proses semula / Kuarantin / Kembali ke stok) ditandatangani oleh <b>penyelia pengeluaran, operasi atau admin</b> sahaja. Laporan tidak boleh ditutup tanpa keputusan, dan dikunci selepas ditutup.</p>
    <p class="muted small">Kecederaan pekerja dilapor dalam daftar insiden DOSH (CMMS), bukan di sini.</p>`},
   {id:"dash", roles:["all"], h:"9. Papan Pemuka", b:`
    <ul><li><b>Dirancang</b>: jumlah KG job mengikut tarikh pelan dalam bulan dipilih.</li>
@@ -1360,8 +1360,8 @@ const GUIDE = {
   {id:"roles", roles:["all"], h:"3. Who does what", b:`
    <table class="t"><tr><th>Role</th><th>Can do</th></tr>
    <tr><td><b>Planner</b></td><td>Create, edit, release and cancel jobs. Close jobs. Report losses.</td></tr>
-   <tr><td><b>Production Supervisor</b></td><td>Start mixing, record outputs, mark done, transfer to store, enter wastage cause, report losses, <b>sign off material disposition</b>.</td></tr>
-   <tr><td><b>QC</b></td><td>Record QC result (PASS / HOLD / FAIL), verify wastage, report losses.</td></tr>
+   <tr><td><b>Production Supervisor</b></td><td>Start mixing, record outputs, mark done, transfer to store, record QC result, enter and verify wastage cause, report losses, <b>sign off material disposition</b>.</td></tr>
+   <tr><td><b>Operation</b> (Production Inventory Controller)</td><td>Same as Production Supervisor.</td></tr>
    <tr><td><b>View Only</b></td><td>See everything. Cannot change anything.</td></tr>
    <tr><td><b>Admin</b></td><td>All of the above, plus users, machines and settings.</td></tr></table>
    <p class="muted small">The buttons you see depend on your role. If a button is missing, your role is not allowed to do that step.</p>`},
@@ -1374,14 +1374,14 @@ const GUIDE = {
    <p><b>JOB numbers are issued automatically</b>: one JOB Mixing per batch plus one JOB Packing, shown as JOB-xxxxx. Each JOB Mixing is also the inventory batch number (B/N). The project running number is W-xxxx. Do not type JOB numbers.</p>
    <p><b>Edit plan</b> is allowed only in Planning or Released. Adding batches adds new JOB numbers automatically. Once mixing starts, the plan is locked.</p>
    <p><b>Close job</b> when it is Done or Transferred. If unexplained wastage is above target, the system asks for a cause first.</p>`},
-  {id:"supervisor", roles:["supervisor","admin"], h:"5. Supervisor: update production", b:`
+  {id:"supervisor", roles:["supervisor","operation","admin"], h:"5. Supervisor / Operation: update production", b:`
    <ol><li>Open a <b>Released</b> job and press <b>Start mixing</b>. Today's date is filled in.</li>
    <li>After mixing, press <b>Record mixing output</b> and enter the actual KG for <b>each batch (B/N)</b>. The JOB Mixing number, e.g. JOB-20499, is also the inventory batch number B/N 20499. The total is calculated for you.</li>
    <li>After packing, press <b>Record packing output</b> (or <b>Record finished goods output</b> for bulk jobs). Choose the UOM: KG, Pack, Bag or Carton. For Pack / Bag / Carton, also enter the KG per unit; the system converts it to KG for the wastage calculation.</li>
    <li>Press <b>Mark done</b>. The system asks for any output still missing.</li>
    <li>When sent to store, press <b>Transfer to store (TO)</b> and enter the TO REQ No.</li></ol>
    <p>If the variance is above target, press <b>Enter wastage cause</b> and write the cause and action. Entered something wrong? Press <b>Reopen</b> while the job is Done.</p>`},
-  {id:"qc", roles:["qc","admin"], h:"6. QC: results and verification", b:`
+  {id:"qc", roles:["supervisor","operation","admin"], h:"6. QC result and wastage verification", b:`
    <ul><li>Open the job and press <b>Record QC result</b>: PASS, HOLD or FAIL, with date and remarks.</li>
    <li><b>HOLD or FAIL blocks the transfer to store</b> until the result is changed to PASS.</li>
    <li>For jobs over the wastage target that already have a cause, press <b>Verify wastage</b>.</li></ul>`},
@@ -1399,7 +1399,7 @@ const GUIDE = {
    <li>Enter the material, KG lost, time, what happened and the immediate action.</li>
    <li>Take <b>photos</b> straight from the phone camera (up to 6).</li>
    <li>Save. A LOSS-xxxx number is issued automatically.</li></ol>
-   <p>The <b>disposition</b> (Dispose / Rework / Quarantine / Return to stock) is signed off by a <b>production supervisor or admin</b> only. A report cannot be closed without one, and is locked once closed.</p>
+   <p>The <b>disposition</b> (Dispose / Rework / Quarantine / Return to stock) is signed off by a <b>production supervisor, operation or admin</b> only. A report cannot be closed without one, and is locked once closed.</p>
    <p class="muted small">Injuries to staff go in the DOSH incident register (CMMS), not here.</p>`},
   {id:"dash", roles:["all"], h:"9. Dashboard", b:`
    <ul><li><b>Planned</b>: total KG of jobs by plan date in the selected month.</li>
@@ -1479,7 +1479,7 @@ async function renderMore(m){
     formSheet(t("addUser"), [
       {k:"n",label:t("fullName"),req:true},
       {k:"u",label:t("username")+" (a-z, 0-9)",req:true},
-      {k:"r",label:t("role"),type:"select",v:"supervisor",opts:["planner","supervisor","qc","viewer","admin"].map(r=>[r,t(r)])},
+      {k:"r",label:t("role"),type:"select",v:"supervisor",opts:["planner","supervisor","operation","viewer","admin"].map(r=>[r,t(r)])},
       {k:"p",label:t("password")+" ("+t("pwMin")+")",type:"text",req:true}
     ], async v => {
       const { error } = await sb.rpc("admin_create_user", { p_username:v.u, p_full_name:v.n, p_role:v.r, p_password:v.p });
@@ -1501,7 +1501,7 @@ async function loadUsers(){
 function editUser(u){
   formSheet(`${esc(u.full_name)} · @${esc(u.username)}`, [
     {k:"n",label:t("fullName"),v:u.full_name,req:true},
-    {k:"r",label:t("role"),type:"select",v:u.role,opts:["admin","planner","supervisor","qc","viewer"].map(r=>[r,t(r)])},
+    {k:"r",label:t("role"),type:"select",v:u.role,opts:["admin","planner","supervisor","operation","viewer"].map(r=>[r,t(r)])},
     {k:"a",label:t("activeUser"),type:"select",v:String(u.active),opts:[["true","✓ "+t("activeUser")],["false","✗ OFF"]]},
     {k:"p",label:t("resetPw")+" ("+t("pwMin")+")",type:"text",v:""}
   ], async v => {
