@@ -247,6 +247,11 @@ const T = {
   jobCreated:"Job dicipta", pwMin:"Minimum 8 aksara", loading:"Memuatkan…", offline:"Luar talian - sedang menyambung semula",
   showing:"Menunjukkan", of:"daripada", moreBtn:"Tunjuk lagi", userHelp:"Pengguna log masuk dengan nama pengguna dan kata laluan ini. Satu akaun boleh digunakan di beberapa peranti serentak.",
   roleHelp:"Perancang: cipta & lepaskan job, tutup job. Penyelia: kemas kini campuran, pembungkusan, pindahan. QC: keputusan QC & sahkan pembaziran.",
+  sum:"Jumlah", jobOrder:"Job Order", bn:"B/N", batchOut:"Output kelompok", actFG:"Rekod output barang siap", uom:"UOM", qty:"Kuantiti", unitKg:"KG seunit",
+  totalKg:"Jumlah KG", fgOut:"Output Pembungkusan / Barang Siap", perBatchHelp:"Isi KG sebenar bagi setiap kelompok (B/N). Kosongkan jika belum siap.",
+  adminEdit:"Ubah (Admin)", adminHelp:"Admin boleh membetulkan semua medan, termasuk job lama. Semua perubahan direkod dalam Sejarah.",
+  legacyTotal:"Job lama: output direkod sebagai jumlah sahaja.", joList:"Nombor JO (asingkan dengan ruang)", batchOpt:"- Semua / tidak pasti -",
+  KG:"KG", PACK:"Pek", BAG:"Beg", CARTON:"Karton",
   guide:"Panduan Pengguna", expandAll:"Buka / tutup semua", print:"Cetak", guideIntro:"Bahagian untuk peranan anda dibuka dahulu. Peranan anda:",
   loss:"Kerugian", lossTitle:"Laporan Kerugian Pengeluaran", reportLoss:"Lapor Kerugian", lossNo:"No. Laporan", occurred:"Masa kejadian",
   stage:"Peringkat", lossType:"Jenis kerugian", material:"Bahan / produk", qtyLost:"Kuantiti hilang (KG)", whatHappened:"Apa yang berlaku",
@@ -292,6 +297,11 @@ const T = {
   jobCreated:"Job created", pwMin:"Minimum 8 characters", loading:"Loading…", offline:"Offline - reconnecting",
   showing:"Showing", of:"of", moreBtn:"Show more", userHelp:"Users sign in with this username and password. One account can be used on several devices at the same time.",
   roleHelp:"Planner: create & release jobs, close jobs. Supervisor: update mixing, packing, transfer. QC: QC result & verify wastage.",
+  sum:"Total", jobOrder:"Job Order", bn:"B/N", batchOut:"Batch output", actFG:"Record finished goods output", uom:"UOM", qty:"Quantity", unitKg:"KG per unit",
+  totalKg:"Total KG", fgOut:"Packing / Finished Goods Output", perBatchHelp:"Enter the actual KG for each batch (B/N). Leave blank if not done yet.",
+  adminEdit:"Edit (Admin)", adminHelp:"Admin can correct every field, including old jobs. All changes are recorded in History.",
+  legacyTotal:"Older job: output recorded as totals only.", joList:"JO numbers (separate with spaces)", batchOpt:"- All / not sure -",
+  KG:"KG", PACK:"Pack", BAG:"Bag", CARTON:"Carton",
   guide:"User Guide", expandAll:"Expand / collapse all", print:"Print", guideIntro:"Sections for your role are opened first. Your role:",
   loss:"Losses", lossTitle:"Production Loss Reports", reportLoss:"Report Loss", lossNo:"Report No.", occurred:"Time of incident",
   stage:"Stage", lossType:"Type of loss", material:"Material / product", qtyLost:"Quantity lost (KG)", whatHappened:"What happened",
@@ -311,7 +321,7 @@ let LANG = store.get("gfbp_lang","ms");
 const t = k => (T[LANG][k] ?? T.en[k] ?? k);
 
 // ======================= STATE =======================
-const S = { user:null, me:null, jobs:[], losses:[], lossF:"OPEN", machines:[], users:[], target:1.0, tab:"jobs",
+const S = { user:null, me:null, jobs:[], batches:[], losses:[], lossF:"OPEN", machines:[], users:[], target:1.0, tab:"jobs",
   filter:"ACTIVE", q:"", machineF:"", limit:60, month:null, live:true, sortKey:"job_no", sortDir:-1 };
 const STATUSES = ["PLANNING","RELEASED","IN PROCESS","DONE","TRANSFERRED","CLOSED","CANCELLED"];
 const STEP = {"PLANNING":0,"RELEASED":1,"IN PROCESS":2,"DONE":3,"TRANSFERRED":4,"CLOSED":5,"CANCELLED":-1};
@@ -338,6 +348,11 @@ const jobLoss = id => S.losses.filter(l=>l.job_id===id && ["MIXING","PACKING"].i
 const unexplainedKg = j => { if(!(j.mixing_output>0) || j.packing_output==null) return null; const v=j.mixing_output-j.packing_output; return v>0 ? Math.max(v - jobLoss(j.id), 0) : v; };
 const uPct = j => { const u=unexplainedKg(j); return u==null?null:u/j.mixing_output; };
 const overTarget = j => { const u=unexplainedKg(j); return u!=null && Math.abs(u)/j.mixing_output*100 > S.target; };
+const batchesOf = id => S.batches.filter(b=>b.job_id===id).sort((a,b)=>a.seq-b.seq);
+const JO = x => "JOB-" + x;
+const UOMS = ["KG","PACK","BAG","CARTON"];
+const UOM_SHORT = {KG:"KG",PACK:"PK",BAG:"BAG",CARTON:"CTN"};
+const packText = j => j.packing_output==null ? null : (j.pack_uom && j.pack_uom!=="KG" && j.pack_qty!=null ? `${nf(j.pack_qty, j.pack_qty%1?2:0)} ${t(j.pack_uom)} × ${nf(j.pack_unit_kg, 2)} kg = ${kg(j.packing_output)}` : kg(j.packing_output));
 const LSTAGES = ["MIXING","PACKING","TRANSFER","RAW_MATERIAL"];
 const LTYPES = ["SPILLAGE","TORN_BAG","DAMAGED_PACK","MACHINE_FAULT","CONTAMINATION","RESIDUE","OTHER"];
 const LDISP = ["DISPOSE","REWORK","QUARANTINE","RETURN_TO_STOCK"];
@@ -354,12 +369,14 @@ const ICON = {
 
 // ======================= DATA =======================
 async function loadAll(){
-  const [jobsR, mR, sR, lR] = await Promise.all([
+  const [jobsR, mR, sR, lR, bR] = await Promise.all([
     fetchAllJobs(),
     sb.from("machines").select("*").order("sort_order"),
     sb.from("app_settings").select("*"),
-    sb.from("loss_reports").select("*").order("occurred_at",{ascending:false}).limit(5000)
+    sb.from("loss_reports").select("*").order("occurred_at",{ascending:false}).limit(5000),
+    sb.from("job_batches").select("*").order("id",{ascending:false}).range(0, 19999)
   ]);
+  S.batches = bR.data || [];
   S.jobs = jobsR;
   S.losses = lR.data || [];
   S.machines = mR.data || [];
@@ -387,6 +404,11 @@ function subscribe(){
       else upsertLocal(p.new);
       if(!$(".sheet-bg") || S.tab!=="jobs") render(); else renderMainOnly();
       const open = $(".sheet[data-job]"); if(open && p.new && Number(open.dataset.job)===p.new.id) openJob(p.new.id, true);
+    })
+    .on("postgres_changes",{event:"*",schema:"public",table:"job_batches"}, p => {
+      if(p.eventType==="DELETE") S.batches = S.batches.filter(b=>b.id!==p.old.id);
+      else { const i=S.batches.findIndex(b=>b.id===p.new.id); if(i>=0) S.batches[i]=p.new; else S.batches.push(p.new); }
+      const open = $(".sheet[data-job]"); if(open && p.new && Number(open.dataset.job)===p.new.job_id && !$("#fs") && !$("#jf")) openJob(p.new.job_id, true);
     })
     .on("postgres_changes",{event:"*",schema:"public",table:"loss_reports"}, p => {
       if(p.eventType==="DELETE") S.losses = S.losses.filter(l=>l.id!==p.old.id);
@@ -481,7 +503,7 @@ function filteredJobs(){
     if(S.filter!=="ACTIVE" && S.filter!=="ALL" && j.status!==S.filter) return false;
     if(S.machineF && j.machine!==S.machineF) return false;
     if(q){
-      const hay = [j.job_no,j.product,j.customer,j.machine,j.notes,j.remarks,j.to_req_no,...(j.jo_mix||[]),...(j.jo_pack||[])].join(" ").toLowerCase();
+      const hay = [j.job_no,j.product,j.customer,j.machine,j.notes,j.remarks,j.to_req_no,...(j.jo_mix||[]).map(x=>JO(x)+" b/n "+x+" bn"+x),...(j.jo_pack||[]).map(JO)].join(" ").toLowerCase();
       if(!hay.includes(q)) return false;
     }
     return true;
@@ -535,16 +557,16 @@ function sortJobs(list){
 function jobTable(rows){
   if(!rows.length) return `<div class="card empty">${t("noData")}</div>`;
   const arrow = k => S.sortKey===k ? (S.sortDir>0?" ▲":" ▼") : "";
-  const jo = a => !a||!a.length ? "-" : a.length===1 ? a[0] : `${a[0]}–${a[a.length-1]}`;
+  const jo = a => !a||!a.length ? "-" : a.length===1 ? JO(a[0]) : `${JO(a[0])}–${a[a.length-1]}`;
   return `<div class="card tbl-wrap"><table class="jobs"><thead><tr>${COLS.map(([k,l,n])=>`<th data-sort="${k}" class="${n?"n":""}">${esc(t(l))}${arrow(k)}</th>`).join("")}</tr></thead><tbody>
   ${rows.map(j=>{ const v=varPct(j); const ov=overTarget(j);
     return `<tr data-id="${j.id}">
       <td><b>${esc(j.job_no)}</b></td><td>${fd(j.plan_date)}</td><td>${esc(j.machine)}</td>
       <td class="wrapc">${esc(j.product)}</td><td class="wrapc">${j.notes||j.remarks?`${esc(j.notes||"")}${j.notes&&j.remarks?"<br>":""}${j.remarks?`<span class="muted small">${esc(j.remarks)}</span>`:""}`:'<span class="muted">-</span>'}</td>
       <td class="n">${nf(j.batch_qty, j.batch_qty%1?2:0)} × ${j.batches}</td><td class="n"><b>${nf(j.total_planned, j.total_planned%1?2:0)}</b></td>
-      <td>${esc(jo(j.jo_mix))}${(j.jo_pack||[]).length?`<div class="muted small">P: ${esc(j.jo_pack.join(", "))}</div>`:""}</td>
+      <td>${esc(jo(j.jo_mix))}${(j.jo_pack||[]).length?`<div class="muted small">P: ${esc(j.jo_pack.map(JO).join(", "))}</div>`:""}</td>
       <td class="n">${j.mixing_output!=null?nf(j.mixing_output, j.mixing_output%1?2:0):"-"}</td>
-      <td class="n">${j.packing_output!=null?nf(j.packing_output, j.packing_output%1?2:0):(j.bulk_packing?'<span class="muted small">BULK</span>':"-")}</td>
+      <td class="n">${j.packing_output!=null?(j.pack_uom&&j.pack_uom!=="KG"&&j.pack_qty!=null?`${nf(j.pack_qty, j.pack_qty%1?2:0)} ${UOM_SHORT[j.pack_uom]}<div class="muted small">${nf(j.packing_output, j.packing_output%1?2:0)} KG</div>`:nf(j.packing_output, j.packing_output%1?2:0)):(j.bulk_packing?'<span class="muted small">BULK</span>':"-")}</td>
       <td class="n ${ov&&!j.wastage_cause?"bad-t":""}">${v!=null?pct(v,2):"-"}${ov&&!j.wastage_cause?" !":""}</td>
       <td>${badge(j.status)}</td></tr>`; }).join("")}
   </tbody></table></div>`;
@@ -582,7 +604,7 @@ async function openJob(id, keepScroll){
   if(isP && st==="PLANNING") acts.push(["release",t("actRelease"),"primary"]);
   if(isS && st==="RELEASED") acts.push(["start",t("actStart"),"primary"]);
   if(isS && ["IN PROCESS","DONE"].includes(st)) acts.push(["mix",t("actMix"),""]);
-  if(isS && ["IN PROCESS","DONE"].includes(st) && !j.bulk_packing) acts.push(["pack",t("actPack"),""]);
+  if(isS && ["IN PROCESS","DONE"].includes(st)) acts.push(["pack",j.bulk_packing?t("actFG"):t("actPack"),""]);
   if(isS && st==="IN PROCESS") acts.push(["done",t("actDone"),"primary"]);
   if(isQ && ["IN PROCESS","DONE","TRANSFERRED"].includes(st)) acts.push(["qc",t("actQC"),""]);
   if(isS && st==="DONE") acts.push(["transfer",t("actTransfer"),"primary"]);
@@ -596,7 +618,9 @@ async function openJob(id, keepScroll){
   if(isP && ["PLANNING","RELEASED"].includes(st)) acts.push(["cancel",t("actCancel"),"danger"]);
   if(isA && st==="CANCELLED") acts.push(["unrelease",t("actUnrelease"),"ghost"]);
   if(role!=="viewer" && st!=="CANCELLED") acts.push(["reportloss","⚠ "+t("reportLoss"),"ghost"]);
+  if(isA) acts.push(["adminedit","✎ "+t("adminEdit"),"ghost"]);
   const jl = S.losses.filter(l=>l.job_id===j.id);
+  const bts = batchesOf(j.id);
 
   const body = `
    <div class="row" style="justify-content:space-between;margin-bottom:8px">${badge(st)}<span class="muted small">${t("created")} ${fdt(j.created_at)}</span></div>
@@ -611,13 +635,18 @@ async function openJob(id, keepScroll){
       ${j.notes?`<dt>${t("notes")}</dt><dd>${esc(j.notes)}</dd>`:""}
      </dl>
    </div>
-   <div class="card sec"><h3>${t("joMix")} (${(j.jo_mix||[]).length})</h3><div class="jo">${(j.jo_mix||[]).map(x=>`<span>${esc(x)}</span>`).join("")||`<span class="muted">${t("none")}</span>`}</div>
-     <h3 style="margin-top:10px">${t("joPack")}</h3><div class="jo">${(j.jo_pack||[]).map(x=>`<span>${esc(x)}</span>`).join("")||`<span class="muted">${j.bulk_packing?t("bulk"):t("none")}</span>`}</div></div>
+   <div class="card sec"><h3>${t("joMix")} (${(j.jo_mix||[]).length})</h3>
+     ${bts.length ? `<table class="t"><tr><th>${t("jobOrder")}</th><th>${t("bn")}</th><th class="n">${t("mixOut")} (KG)</th><th class="n">${t("date")}</th></tr>
+        ${bts.map(b=>`<tr><td><b>${esc(JO(b.jo_no))}</b></td><td>${esc(b.jo_no)}</td><td class="n">${b.mix_kg!=null?nf(b.mix_kg, b.mix_kg%1?2:0):"-"}</td><td class="n">${b.mix_date?fd(b.mix_date):"-"}</td></tr>`).join("")}
+        <tr><td colspan="2"><b>${t("sum")}</b></td><td class="n"><b>${j.mixing_output!=null?nf(j.mixing_output, j.mixing_output%1?2:0):"-"}</b></td><td></td></tr></table>`
+      : `<div class="jo">${(j.jo_mix||[]).map(x=>`<span>${esc(JO(x))} <span class="muted">· ${t("bn")} ${esc(x)}</span></span>`).join("")||`<span class="muted">${t("none")}</span>`}</div>
+         ${j.mixing_output!=null?`<div class="muted small" style="margin-top:6px">${t("legacyTotal")}</div>`:""}`}
+     <h3 style="margin-top:10px">${t("joPack")}</h3><div class="jo">${(j.jo_pack||[]).map(x=>`<span>${esc(JO(x))}</span>`).join("")||`<span class="muted">${j.bulk_packing?t("bulk"):t("none")}</span>`}</div></div>
    <div class="card sec"><h3>${t("mixing")} & ${t("packing")}</h3>
      <dl class="kv">
       <dt>${t("released")}</dt><dd>${fd(j.date_released)}</dd>
       <dt>${t("mixOut")}</dt><dd>${kg(j.mixing_output)} <span class="muted small">${j.date_mixing?fd(j.date_mixing):""}</span></dd>
-      <dt>${t("packOut")}</dt><dd>${j.bulk_packing?`<span class="muted">${t("bulk").split(" (")[0]}</span>`:kg(j.packing_output)} <span class="muted small">${j.date_packing?fd(j.date_packing):""}</span></dd>
+      <dt>${t("fgOut")}</dt><dd>${packText(j) ?? (j.bulk_packing?`<span class="muted">${t("bulk").split(" (")[0]}</span>`:"-")} <span class="muted small">${j.date_packing?fd(j.date_packing):""}</span></dd>
       <dt>${t("variance")}</dt><dd ${overTarget(j)?'style="color:var(--bad)"':""}>${v!=null?`${kg(j.variance_kg)} (${pct(v,2)})`:"-"}</dd>
       ${jobLoss(j.id)>0?`<dt>${t("reportedLoss")}</dt><dd>${kg(jobLoss(j.id))}</dd><dt>${t("unexplained")}</dt><dd ${overTarget(j)?'style="color:var(--bad)"':""}>${unexplainedKg(j)!=null?`${kg(unexplainedKg(j))} (${pct(unexplainedKg(j)/j.mixing_output,2)})`:"-"}</dd>`:""}
       <dt>${t("qcResult")}</dt><dd>${j.qc_result?`${esc(j.qc_result)} <span class="muted small">${fd(j.date_qc)}</span>`:"-"}</dd>
@@ -667,14 +696,16 @@ async function doAction(j, act){
       case "release": return await done({ status:"RELEASED", date_released: j.date_released || today() });
       case "unrelease": return await done({ status:"PLANNING" });
       case "start": return formSheet(t("actStart"), [{k:"d",label:t("date"),type:"date",v:today(),req:true}], v => done({status:"IN PROCESS", date_mixing:v.d}));
-      case "mix": return formSheet(t("actMix"), [
+      case "mix": {
+        const bts = batchesOf(j.id);
+        if(!bts.length) return formSheet(t("actMix"), [
           {k:"d",label:t("date"),type:"date",v:j.date_mixing||today(),req:true},
           {k:"o",label:t("mixOut")+" (KG)",type:"number",step:"0.01",v:j.mixing_output??"",req:true}],
           v => done({date_mixing:v.d, mixing_output:numOrNull(v.o)}));
-      case "pack": return formSheet(t("actPack"), [
-          {k:"d",label:t("date"),type:"date",v:j.date_packing||today(),req:true},
-          {k:"o",label:t("packOut")+" (KG)",type:"number",step:"0.01",v:j.packing_output??"",req:true}],
-          v => done({date_packing:v.d, packing_output:numOrNull(v.o)}));
+        return batchForm(j, bts);
+      }
+      case "pack": return packForm(j, done);
+      case "adminedit": return adminEditForm(j);
       case "done": {
         if(j.mixing_output==null){ toast(t("actMix"), true); return doAction(j,"mix"); }
         if(!j.bulk_packing && j.packing_output==null){ toast(t("actPack"), true); return doAction(j,"pack"); }
@@ -707,6 +738,113 @@ async function doAction(j, act){
       case "reportloss": return openLossForm(null, j.id);
     }
   } catch(e){ toast(errMsg(e), true); }
+}
+async function refreshBatches(id){ const { data } = await sb.from("job_batches").select("*").eq("job_id", id); S.batches = S.batches.filter(b=>b.job_id!==id).concat(data||[]); }
+function batchForm(j, bts){
+  const body = `<form id="bf">
+    <div class="muted small" style="margin-bottom:8px">${t("perBatchHelp")}</div>
+    <label class="f">${t("date")}</label><input type="date" id="b_date" value="${today()}" required>
+    <table class="t" style="margin-top:10px"><tr><th>${t("jobOrder")}</th><th>${t("bn")}</th><th class="n">KG</th></tr>
+    ${bts.map(b=>`<tr><td><b>${esc(JO(b.jo_no))}</b></td><td>${esc(b.jo_no)}</td><td class="n" style="width:46%"><input type="number" step="0.01" min="0" inputmode="decimal" data-bid="${b.id}" value="${b.mix_kg??""}" placeholder="${nf(j.batch_qty)}"></td></tr>`).join("")}
+    <tr><td colspan="2"><b>${t("sum")}</b></td><td class="n"><b id="b_tot">-</b></td></tr></table>
+    <div id="berr"></div>
+    <div class="grid2" style="margin-top:14px"><button type="button" class="btn ghost" id="bc">${t("cancel")}</button><button class="btn primary" id="bs">${t("save")}</button></div></form>`;
+  sheet(`${t("actMix")} · ${esc(j.job_no)}`, body);
+  const tot = () => { let s=0,n=0; document.querySelectorAll("[data-bid]").forEach(i=>{ if(i.value!==""){ s+=Number(i.value); n++; } }); $("#b_tot").textContent = n? kg(s):"-"; };
+  document.querySelectorAll("[data-bid]").forEach(i=>i.oninput=tot); tot();
+  $("#bc").onclick = () => openJob(j.id);
+  $("#bf").onsubmit = async e => {
+    e.preventDefault(); $("#bs").disabled = true;
+    try{
+      for(const i of document.querySelectorAll("[data-bid]")){
+        const b = bts.find(x=>x.id===Number(i.dataset.bid)); const v = i.value===""?null:Number(i.value);
+        if(v===(b.mix_kg==null?null:Number(b.mix_kg))) continue;
+        const { data, error } = await sb.from("job_batches").update({ mix_kg:v, mix_date: v==null?null:(b.mix_date||$("#b_date").value) }).eq("id", b.id).select().single();
+        if(error) throw error; const k=S.batches.findIndex(x=>x.id===data.id); if(k>=0) S.batches[k]=data;
+      }
+      const { data:jr } = await sb.from("job_orders").select("*").eq("id", j.id).single(); if(jr) upsertLocal(jr);
+      toast(t("saved")); openJob(j.id); renderMainOnly();
+    } catch(er){ $("#berr").innerHTML = `<div class="errbox">${esc(errMsg(er))}</div>`; $("#bs").disabled=false; }
+  };
+}
+function packForm(j, done){
+  const body = `<form id="pf">
+    <label class="f">${t("date")}</label><input type="date" id="p_date" value="${j.date_packing||today()}" required>
+    <div class="grid2">
+      <div><label class="f">${t("uom")}</label><select id="p_uom">${UOMS.map(u=>`<option value="${u}" ${(j.pack_uom||"KG")===u?"selected":""}>${t(u)}</option>`).join("")}</select></div>
+      <div><label class="f">${t("qty")}</label><input type="number" id="p_qty" step="0.01" min="0" inputmode="decimal" value="${j.pack_qty??""}" required></div>
+    </div>
+    <div id="p_unitw"><label class="f">${t("unitKg")}</label><input type="number" id="p_unit" step="0.0001" min="0.0001" inputmode="decimal" value="${j.pack_unit_kg??""}"></div>
+    <div class="card" style="padding:10px 12px;margin-top:10px"><div class="row" style="justify-content:space-between"><span class="muted">${t("totalKg")}</span><b id="p_tot">-</b></div></div>
+    <div id="perr"></div>
+    <div class="grid2" style="margin-top:14px"><button type="button" class="btn ghost" id="pc">${t("cancel")}</button><button class="btn primary" id="ps">${t("save")}</button></div></form>`;
+  sheet(`${j.bulk_packing?t("actFG"):t("actPack")} · ${esc(j.job_no)}`, body);
+  const calc = () => { const u=$("#p_uom").value, q=Number($("#p_qty").value)||0, w=Number($("#p_unit").value)||0;
+    $("#p_unitw").classList.toggle("hidden", u==="KG"); $("#p_unit").required = u!=="KG";
+    const k = u==="KG" ? q : q*w; $("#p_tot").textContent = k ? kg(Math.round(k*100)/100) : "-"; return k; };
+  ["#p_uom","#p_qty","#p_unit"].forEach(s=>{ $(s).oninput=calc; $(s).onchange=calc; }); calc();
+  $("#pc").onclick = () => openJob(j.id);
+  $("#pf").onsubmit = async e => {
+    e.preventDefault(); $("#ps").disabled = true;
+    const u=$("#p_uom").value, q=Number($("#p_qty").value), w=u==="KG"?null:Number($("#p_unit").value);
+    try { await done({ date_packing:$("#p_date").value, pack_uom:u, pack_qty:q, pack_unit_kg:w, packing_output: Math.round((u==="KG"?q:q*w)*100)/100 }); }
+    catch(er){ $("#perr").innerHTML = `<div class="errbox">${esc(errMsg(er))}</div>`; $("#ps").disabled=false; }
+  };
+}
+function adminEditForm(j){
+  const bts = batchesOf(j.id);
+  const F = (k,l,type="text",v=j[k],extra="") => `<div><label class="f">${l}</label><input type="${type}" id="a_${k}" value="${esc(v??"")}" ${type==="number"?'step="0.01" inputmode="decimal"':""} ${extra}></div>`;
+  const body = `<form id="af">
+    <div class="warnbox">${t("adminHelp")}</div>
+    <label class="f">Status</label><select id="a_status">${STATUSES.map(s=>`<option value="${s}" ${j.status===s?"selected":""}>${t(s)}</option>`).join("")}</select>
+    <div class="grid2">${F("product",t("product"))}${F("customer",t("customer"))}</div>
+    <div class="grid2"><div><label class="f">${t("machine")}</label><select id="a_machine">${[...new Set([j.machine,...S.machines.map(m=>m.name)])].map(m=>`<option ${m===j.machine?"selected":""}>${esc(m)}</option>`).join("")}</select></div>${F("plan_date",t("planDate"),"date")}</div>
+    <div class="grid2">${F("batch_qty",t("batchQty"),"number")}${F("batches",t("batches"),"number")}</div>
+    ${F("total_planned",t("total")+" (KG)","number")}
+    <label class="f">${t("joMix")} - ${t("joList")}</label><input type="text" id="a_jo_mix" value="${esc((j.jo_mix||[]).join(" "))}">
+    <label class="f">${t("joPack")} - ${t("joList")}</label><input type="text" id="a_jo_pack" value="${esc((j.jo_pack||[]).join(" "))}">
+    <label class="check"><input type="checkbox" id="a_bulk" ${j.bulk_packing?"checked":""}> ${t("bulk")}</label>
+    <div class="grid2">${F("date_released",t("released"),"date")}${F("date_mixing",t("mixing")+" - "+t("date"),"date")}</div>
+    ${bts.length?`<div class="muted small" style="margin-top:8px">${t("mixOut")}: ${t("batchOut")} (${bts.length}) - ${LANG==="ms"?"ubah melalui":"edit via"} "${t("actMix")}"</div>`:F("mixing_output",t("mixOut")+" (KG)","number")}
+    <div class="grid2">${F("date_packing",t("packing")+" - "+t("date"),"date")}<div><label class="f">${t("uom")}</label><select id="a_pack_uom"><option value=""></option>${UOMS.map(u=>`<option value="${u}" ${j.pack_uom===u?"selected":""}>${t(u)}</option>`).join("")}</select></div></div>
+    <div class="grid2">${F("pack_qty",t("qty"),"number")}${F("pack_unit_kg",t("unitKg"),"number")}</div>
+    ${F("packing_output",t("packOut")+" (KG)","number")}
+    <div class="grid2"><div><label class="f">${t("qcResult")}</label><select id="a_qc_result"><option value=""></option>${["PASS","HOLD","FAIL"].map(x=>`<option ${j.qc_result===x?"selected":""}>${x}</option>`).join("")}</select></div>${F("date_qc","QC - "+t("date"),"date")}</div>
+    <div class="grid2">${F("to_req_no",t("toReq"))}${F("date_transferred",t("TRANSFERRED")+" - "+t("date"),"date")}</div>
+    ${F("date_closed",t("CLOSED")+" - "+t("date"),"date")}
+    <label class="f">${t("notes")}</label><textarea id="a_notes">${esc(j.notes||"")}</textarea>
+    <label class="f">${t("remarks")}</label><textarea id="a_remarks">${esc(j.remarks||"")}</textarea>
+    <label class="f">${t("cause")}</label><textarea id="a_wastage_cause">${esc(j.wastage_cause||"")}</textarea>
+    <label class="f">${t("action")}</label><textarea id="a_wastage_action">${esc(j.wastage_action||"")}</textarea>
+    <div id="aerr"></div>
+    <div class="grid2" style="margin-top:14px"><button type="button" class="btn ghost" id="ac">${t("cancel")}</button><button class="btn primary" id="as">${t("save")}</button></div></form>`;
+  sheet(`${t("adminEdit")} · ${esc(j.job_no)}`, body);
+  const pq=$("#a_pack_qty"), pu=$("#a_pack_uom"), pw=$("#a_pack_unit_kg"), po=$("#a_packing_output");
+  const recalc = () => { const q=Number(pq.value), w=Number(pw.value); if(pq.value==="") return; po.value = pu.value==="KG"||!pu.value ? q : (w? Math.round(q*w*100)/100 : po.value); };
+  [pq,pu,pw].forEach(x=>{ x.oninput=recalc; x.onchange=recalc; });
+  $("#ac").onclick = () => openJob(j.id);
+  $("#af").onsubmit = async e => {
+    e.preventDefault(); $("#as").disabled = true;
+    const val = id => { const el=$("#a_"+id); return el ? el.value.trim() : undefined; };
+    const dn = id => val(id)||null, num = id => val(id)==="" ? null : Number(val(id));
+    const row = {
+      status: val("status"), product: val("product").toUpperCase(), customer: val("customer").toUpperCase()||null, machine: val("machine"),
+      plan_date: dn("plan_date"), batch_qty: num("batch_qty"), batches: parseInt(val("batches")), total_planned: num("total_planned"),
+      jo_mix: val("jo_mix").split(/[\s,]+/).filter(Boolean), jo_pack: val("jo_pack").split(/[\s,]+/).filter(Boolean), bulk_packing: $("#a_bulk").checked,
+      date_released: dn("date_released"), date_mixing: dn("date_mixing"),
+      date_packing: dn("date_packing"), pack_uom: dn("pack_uom"), pack_qty: num("pack_qty"), pack_unit_kg: num("pack_unit_kg"), packing_output: num("packing_output"),
+      qc_result: dn("qc_result"), date_qc: dn("date_qc"), to_req_no: dn("to_req_no"), date_transferred: dn("date_transferred"), date_closed: dn("date_closed"),
+      notes: dn("notes"), remarks: dn("remarks"), wastage_cause: dn("wastage_cause"), wastage_action: dn("wastage_action")
+    };
+    if(!bts.length) row.mixing_output = num("mixing_output");
+    try {
+      const { data, error } = await sb.from("job_orders").update(row).eq("id", j.id).select().single(); if(error) throw error;
+      upsertLocal(data);
+      const { data:nb } = await sb.from("job_batches").select("*").eq("job_id", j.id);
+      S.batches = S.batches.filter(b=>b.job_id!==j.id).concat(nb||[]);
+      toast(t("saved")); openJob(j.id); renderMainOnly();
+    } catch(er){ $("#aerr").innerHTML = `<div class="errbox">${esc(errMsg(er))}</div>`; $("#as").disabled=false; }
+  };
 }
 function confirmSheet(msg, fn){
   const bg = sheet(t("actCancel"), `<p>${esc(msg)}</p><div class="grid2"><button class="btn ghost" id="cn">${t("close")}</button><button class="btn danger" id="cy">${t("actCancel")}</button></div>`);
@@ -760,12 +898,12 @@ function openJobForm(j){
       bulk_packing: $("#j_bulk").checked, notes: $("#j_notes").value.trim() || null
     };
     try{
-      if(isEdit){ await updateJob(j.id, row); toast(t("saved")); openJob(j.id); }
+      if(isEdit){ await updateJob(j.id, row); await refreshBatches(j.id); toast(t("saved")); openJob(j.id); }
       else {
         row.status = $("#j_rel").checked ? "RELEASED" : "PLANNING";
         const { data, error } = await sb.from("job_orders").insert(row).select().single();
         if(error) throw error;
-        upsertLocal(data);
+        upsertLocal(data); await refreshBatches(data.id);
         toast(`${t("jobCreated")}: ${data.job_no}`);
         openJob(data.id);
       }
@@ -911,7 +1049,7 @@ function renderLoss(m){
    <div class="chips">${[["OPEN",t("OPEN"),openN],["MONTH",monLabel(S.month),inMonth.length],["ALL",t("all"),S.losses.length]].map(([k,l,n])=>`<button class="chip ${S.lossF===k?"on":""}" data-f="${k}">${esc(l)}<b>${n}</b></button>`).join("")}</div>
    ${!list.length?`<div class="card empty">${t("noData")}</div>` : desk ? `<div class="card tbl-wrap"><table class="jobs"><thead><tr>
       <th>${t("lossNo")}</th><th>${t("occurred")}</th><th>Job</th><th>${t("stage")}</th><th>${t("lossType")}</th><th>${t("material")}</th><th class="n">KG</th><th>${t("disposition")}</th><th>${t("reporter")}</th><th>Status</th></tr></thead><tbody>
-      ${list.map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id); return `<tr data-lid="${l.id}"><td><b>${esc(l.report_no)}</b></td><td>${fdt(l.occurred_at)}</td><td>${j?esc(j.job_no):"-"}</td><td>${esc(t(l.stage))}</td><td>${esc(t(l.loss_type))}</td><td class="wrapc">${esc(l.material)}</td><td class="n"><b>${nf(l.qty_kg, l.qty_kg%1?2:0)}</b></td><td>${l.disposition?esc(t(l.disposition)):"-"}</td><td>${esc(l.reporter_name||"")}</td><td><span class="badge ${l.status==="OPEN"?"s-IN_PROCESS":"s-CLOSED"}">${t(l.status)}</span></td></tr>`; }).join("")}
+      ${list.map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id); return `<tr data-lid="${l.id}"><td><b>${esc(l.report_no)}</b></td><td>${fdt(l.occurred_at)}</td><td>${j?esc(j.job_no):"-"}${l.batch_no?`<div class="muted small">B/N ${esc(l.batch_no)}</div>`:""}</td><td>${esc(t(l.stage))}</td><td>${esc(t(l.loss_type))}</td><td class="wrapc">${esc(l.material)}</td><td class="n"><b>${nf(l.qty_kg, l.qty_kg%1?2:0)}</b></td><td>${l.disposition?esc(t(l.disposition)):"-"}</td><td>${esc(l.reporter_name||"")}</td><td><span class="badge ${l.status==="OPEN"?"s-IN_PROCESS":"s-CLOSED"}">${t(l.status)}</span></td></tr>`; }).join("")}
      </tbody></table></div>`
    : `<div class="joblist">${list.map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id); return `<button class="card job" data-lid="${l.id}">
       <div class="top"><span class="no">${esc(l.report_no)} · ${fdt(l.occurred_at)}</span><span class="badge ${l.status==="OPEN"?"s-IN_PROCESS":"s-CLOSED"}">${t(l.status)}</span></div>
@@ -937,6 +1075,7 @@ async function openLoss(id){
      <dt>${t("material")}</dt><dd>${esc(l.material)}</dd>
      <dt>${t("stage")}</dt><dd>${esc(t(l.stage))}</dd>
      <dt>Job</dt><dd>${j?`<a href="#" id="toJob">${esc(j.job_no)}</a> · ${esc(j.product)}`:"-"}</dd>
+     ${l.batch_no?`<dt>${t("bn")}</dt><dd>${esc(l.batch_no)} (${esc(JO(l.batch_no))})</dd>`:""}
      <dt>${t("reporter")}</dt><dd>${esc(l.reporter_name||"-")}</dd>
     </dl></div>
    <div class="card sec"><h3>${t("whatHappened")}</h3><div style="white-space:pre-wrap">${esc(l.description)}</div>
@@ -989,6 +1128,7 @@ function openLossForm(l, jobId){
   const nowLocal = toMY(isEdit ? l.occurred_at : new Date().toISOString()).slice(0,16);
   const body = `<form id="lf2">
     <label class="f">Job</label><select id="l_job"><option value="">${t("noJob")}</option>${jobs.map(j=>`<option value="${j.id}" ${j.id===preJob?"selected":""}>${esc(j.job_no)} · ${esc(j.product)} · ${esc(j.customer||"")}</option>`).join("")}</select>
+    <label class="f">${t("bn")}</label><select id="l_bn"></select>
     <div class="grid2">
       <div><label class="f">${t("stage")}</label><select id="l_stage">${LSTAGES.map(s=>`<option value="${s}" ${(isEdit?l.stage:(pj&&pj.status==="IN PROCESS"&&pj.mixing_output!=null?"PACKING":"MIXING"))===s?"selected":""}>${t(s)}</option>`).join("")}</select></div>
       <div><label class="f">${t("lossType")}</label><select id="l_type">${LTYPES.map(s=>`<option value="${s}" ${isEdit&&l.loss_type===s?"selected":""}>${t(s)}</option>`).join("")}</select></div>
@@ -1007,7 +1147,10 @@ function openLossForm(l, jobId){
     <div class="grid2" style="margin-top:14px"><button type="button" class="btn ghost" id="lc">${t("cancel")}</button><button class="btn primary" id="ls">${t("save")}</button></div>
   </form>`;
   sheet(isEdit ? `${t("editReport")} · ${esc(l.report_no)}` : t("reportLoss"), body);
-  $("#l_job").onchange = e => { const j=S.jobs.find(x=>x.id===Number(e.target.value)); if(j && !$("#l_mat").value) $("#l_mat").value=j.product; };
+  const fillBn = () => { const j=S.jobs.find(x=>x.id===Number($("#l_job").value)); const cur = isEdit ? l.batch_no : null;
+    $("#l_bn").innerHTML = `<option value="">${t("batchOpt")}</option>` + (j?(j.jo_mix||[]):[]).map(x=>`<option value="${esc(x)}" ${cur===x?"selected":""}>${t("bn")} ${esc(x)} (${esc(JO(x))})</option>`).join(""); };
+  fillBn();
+  $("#l_job").onchange = e => { const j=S.jobs.find(x=>x.id===Number(e.target.value)); if(j && !$("#l_mat").value) $("#l_mat").value=j.product; fillBn(); };
   $("#l_ph").onchange = e => { $("#l_phn").textContent = e.target.files.length ? `${e.target.files.length} 📷` : ""; };
   $("#lc").onclick = () => isEdit ? openLoss(l.id) : closeSheet();
   $("#lf2").onsubmit = async e => {
@@ -1025,7 +1168,7 @@ function openLossForm(l, jobId){
         }
       }
       const row = {
-        job_id: $("#l_job").value ? Number($("#l_job").value) : null,
+        job_id: $("#l_job").value ? Number($("#l_job").value) : null, batch_no: $("#l_bn").value || null,
         stage: $("#l_stage").value, loss_type: $("#l_type").value,
         material: $("#l_mat").value.trim().toUpperCase(), qty_kg: Number($("#l_qty").value),
         occurred_at: new Date($("#l_time").value + ":00+08:00").toISOString(),
@@ -1038,7 +1181,7 @@ function openLossForm(l, jobId){
   };
 }
 function exportLossCsv(list){
-  const cols = ["report_no","occurred_at","job_no","stage","loss_type","material","qty_kg","description","immediate_action","reporter_name","disposition","corrective_action","disposition_name","disposition_at","status","photos"];
+  const cols = ["report_no","occurred_at","job_no","batch_no","stage","loss_type","material","qty_kg","description","immediate_action","reporter_name","disposition","corrective_action","disposition_name","disposition_at","status","photos"];
   const rows = [...list].sort((a,b)=>a.id-b.id).map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id);
     const o = {...l, occurred_at: fdt(l.occurred_at), disposition_at: l.disposition_at?fdt(l.disposition_at):"", job_no: j?j.job_no:"", photos:(l.photo_paths||[]).length, stage:t(l.stage), loss_type:t(l.loss_type), disposition:l.disposition?t(l.disposition):""};
     return cols.map(c=>{ let v=o[c]??""; v=String(v); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; }).join(","); });
@@ -1082,13 +1225,13 @@ const GUIDE = {
    <li>Isi <b>Kuantiti / Kelompok</b> dan <b>Bil. Kelompok</b>. Jumlah dikira sendiri. Satu job boleh ada sehingga 99 kelompok, jadi tidak perlu pecah pesanan kepada beberapa baris.</li>
    <li>Tanda <b>Pembungkusan pukal</b> jika tiada JO pembungkusan.</li>
    <li>Tanda <b>Lepaskan terus</b> jika job sedia untuk pengeluaran, kemudian <b>Simpan</b>.</li></ol>
-   <p><b>Nombor JO dikeluarkan secara automatik</b>: satu JO campuran bagi setiap kelompok dan satu JO pembungkusan. Jangan taip nombor JO.</p>
+   <p><b>Nombor JO dikeluarkan secara automatik</b>: satu JO campuran bagi setiap kelompok dan satu JO pembungkusan, dipapar sebagai JOB-xxxxx. JO campuran juga nombor kelompok inventori (B/N). No. projek berjalan ialah W-xxxx. Jangan taip nombor JO.</p>
    <p><b>Ubah pelan</b> hanya dibenarkan semasa Perancangan atau Dilepaskan. Jika kelompok ditambah, JO baru ditambah sendiri. Selepas campuran bermula, pelan dikunci.</p>
    <p><b>Tutup job</b> apabila status Siap atau Dipindahkan. Jika pembaziran tidak dijelaskan melebihi sasaran, sistem minta punca dahulu.</p>`},
   {id:"supervisor", roles:["supervisor","admin"], h:"5. Penyelia: kemas kini pengeluaran", b:`
    <ol><li>Buka job yang <b>Dilepaskan</b> dan tekan <b>Mula campuran</b>. Tarikh hari ini diisi sendiri.</li>
-   <li>Selepas campuran, tekan <b>Rekod output campuran</b> dan isi KG sebenar.</li>
-   <li>Selepas pembungkusan, tekan <b>Rekod output pembungkusan</b> dan isi KG sebenar.</li>
+   <li>Selepas campuran, tekan <b>Rekod output campuran</b> dan isi KG sebenar bagi <b>setiap kelompok (B/N)</b>. Nombor JO campuran, contohnya JOB-20499, juga nombor kelompok inventori B/N 20499. Jumlah dikira sendiri.</li>
+   <li>Selepas pembungkusan, tekan <b>Rekod output pembungkusan</b> (atau <b>Rekod output barang siap</b> untuk job pukal). Pilih UOM: KG, Pek, Beg atau Karton. Untuk Pek / Beg / Karton, isi juga KG seunit; sistem tukar kepada KG untuk kiraan pembaziran.</li>
    <li>Tekan <b>Tanda siap</b>. Sistem akan minta output yang belum diisi.</li>
    <li>Apabila dihantar ke stor, tekan <b>Pindah ke stor (TO)</b> dan isi No. TO REQ.</li></ol>
    <p>Jika varians melebihi sasaran, tekan <b>Isi punca pembaziran</b> dan tulis punca serta tindakan. Silap rekod? Tekan <b>Buka semula</b> semasa status Siap.</p>`},
@@ -1122,7 +1265,8 @@ const GUIDE = {
    <li><b>Lupa kata laluan</b>: buka pengguna itu dan isi kata laluan baru.</li>
    <li><b>Pekerja berhenti</b>: tukar kepada OFF. Sejarah mereka kekal.</li>
    <li><b>Sasaran pembaziran</b> dan senarai <b>mesin</b> boleh diubah di Lagi → Tetapan.</li>
-   <li><b>Muat turun CSV</b> untuk job dan laporan kerugian (boleh dibuka dalam Excel).</li></ul>`},
+   <li><b>Muat turun CSV</b> untuk job dan laporan kerugian (boleh dibuka dalam Excel).</li>
+   <li><b>Ubah (Admin)</b> di dalam setiap job: betulkan mana-mana medan, termasuk job lama, nombor JO, output dan status. Semua perubahan direkod dalam Sejarah.</li></ul>`},
   {id:"faq", roles:["all"], h:"11. Soalan lazim", b:`
    <p><b>Mesej merah "tidak boleh menukar…"</b>: peranan anda tidak dibenarkan untuk langkah itu. Minta orang yang betul atau admin.</p>
    <p><b>Data tidak muncul</b>: semak titik hijau di atas, kemudian muat semula halaman.</p>
@@ -1161,13 +1305,13 @@ const GUIDE = {
    <li>Enter <b>Qty per Batch</b> and <b>No. of Batches</b>. The total is calculated for you. One job can hold up to 99 batches, so there is no need to split an order across rows.</li>
    <li>Tick <b>Bulk packing</b> if there is no packing JO.</li>
    <li>Tick <b>Release to production now</b> if the job is ready, then <b>Save</b>.</li></ol>
-   <p><b>JO numbers are issued automatically</b>: one mixing JO per batch plus one packing JO. Do not type JO numbers.</p>
+   <p><b>JO numbers are issued automatically</b>: one mixing JO per batch plus one packing JO, shown as JOB-xxxxx. Each mixing JO is also the inventory batch number (B/N). The project running number is W-xxxx. Do not type JO numbers.</p>
    <p><b>Edit plan</b> is allowed only in Planning or Released. Adding batches adds new JO numbers automatically. Once mixing starts, the plan is locked.</p>
    <p><b>Close job</b> when it is Done or Transferred. If unexplained wastage is above target, the system asks for a cause first.</p>`},
   {id:"supervisor", roles:["supervisor","admin"], h:"5. Supervisor: update production", b:`
    <ol><li>Open a <b>Released</b> job and press <b>Start mixing</b>. Today's date is filled in.</li>
-   <li>After mixing, press <b>Record mixing output</b> and enter the actual KG.</li>
-   <li>After packing, press <b>Record packing output</b> and enter the actual KG.</li>
+   <li>After mixing, press <b>Record mixing output</b> and enter the actual KG for <b>each batch (B/N)</b>. The mixing JO number, e.g. JOB-20499, is also the inventory batch number B/N 20499. The total is calculated for you.</li>
+   <li>After packing, press <b>Record packing output</b> (or <b>Record finished goods output</b> for bulk jobs). Choose the UOM: KG, Pack, Bag or Carton. For Pack / Bag / Carton, also enter the KG per unit; the system converts it to KG for the wastage calculation.</li>
    <li>Press <b>Mark done</b>. The system asks for any output still missing.</li>
    <li>When sent to store, press <b>Transfer to store (TO)</b> and enter the TO REQ No.</li></ol>
    <p>If the variance is above target, press <b>Enter wastage cause</b> and write the cause and action. Entered something wrong? Press <b>Reopen</b> while the job is Done.</p>`},
@@ -1201,7 +1345,8 @@ const GUIDE = {
    <li><b>Forgotten password</b>: open that user and enter a new password.</li>
    <li><b>Staff who leave</b>: switch them to OFF. Their history is kept.</li>
    <li><b>Wastage target</b> and the <b>machine</b> list can be changed under More → Settings.</li>
-   <li><b>Download CSV</b> for jobs and loss reports (opens in Excel).</li></ul>`},
+   <li><b>Download CSV</b> for jobs and loss reports (opens in Excel).</li>
+   <li><b>Edit (Admin)</b> inside every job: correct any field, including old jobs, JO numbers, outputs and status. All changes are recorded in History.</li></ul>`},
   {id:"faq", roles:["all"], h:"11. FAQ", b:`
    <p><b>Red message "cannot change…"</b>: your role is not allowed to do that step. Ask the right person or the admin.</p>
    <p><b>Data not showing</b>: check the green dot at the top, then refresh the page.</p>
@@ -1302,8 +1447,8 @@ function editUser(u){
 }
 function exportCsv(subset){
   const src = Array.isArray(subset) ? subset : S.jobs;
-  const cols = ["job_no","machine","plan_date","product","customer","batch_qty","batches","total_planned","jo_mix","jo_pack","bulk_packing","status","date_released","date_mixing","mixing_output","date_packing","packing_output","variance_kg","date_qc","qc_result","to_req_no","date_transferred","date_closed","notes","remarks","wastage_cause","wastage_action","wastage_verified_by","wastage_verified_date"];
-  const rows = [...src].sort((a,b)=>a.id-b.id).map(j=>cols.map(c=>{ let v=j[c]; if(Array.isArray(v)) v=v.join(" "); if(v==null) v=""; v=String(v); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; }).join(","));
+  const cols = ["job_no","machine","plan_date","product","customer","batch_qty","batches","total_planned","jo_mix","jo_pack","bulk_packing","status","date_released","date_mixing","mixing_output","batch_detail","date_packing","pack_qty","pack_uom","pack_unit_kg","packing_output","variance_kg","date_qc","qc_result","to_req_no","date_transferred","date_closed","notes","remarks","wastage_cause","wastage_action","wastage_verified_by","wastage_verified_date"];
+  const rows = [...src].sort((a,b)=>a.id-b.id).map(j=>cols.map(c=>{ let v = c==="batch_detail" ? batchesOf(j.id).map(b=>`${b.jo_no}:${b.mix_kg??""}`).join(" ") : c==="jo_mix"||c==="jo_pack" ? (j[c]||[]).map(JO) : j[c]; if(Array.isArray(v)) v=v.join(" "); if(v==null) v=""; v=String(v); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; }).join(","));
   const blob = new Blob(["﻿"+cols.join(",")+"\n"+rows.join("\n")], {type:"text/csv;charset=utf-8"});
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `GFB_Production_${today()}.csv`; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
