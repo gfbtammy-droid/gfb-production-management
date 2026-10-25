@@ -261,8 +261,13 @@ const T = {
   exportCsv:"Muat turun CSV", loggedAs:"Log masuk sebagai", machines:"Mesin", addMachine:"Tambah mesin",
   jobCreated:"Job dicipta", pwMin:"Minimum 8 aksara", loading:"Memuatkan…", offline:"Luar talian - sedang menyambung semula",
   showing:"Menunjukkan", of:"daripada", moreBtn:"Tunjuk lagi", userHelp:"Pengguna log masuk dengan nama pengguna dan kata laluan ini. Satu akaun boleh digunakan di beberapa peranti serentak.",
-  roleHelp:"Perancang: cipta & lepaskan job, tutup job. Penyelia Pengeluaran dan Operasi: kemas kini campuran, pembungkusan, pindahan, keputusan QC, sahkan pembaziran dan tandatangan laporan kerugian.",
+  roleHelp:"Apa yang setiap peranan boleh buat ditetapkan di Tetapan Akses di bawah.",
   joAdd:"＋ Tambah JOB", joFill:"Isi berturutan dari JOB pertama", joDup:"Nombor JOB berulang ditanda merah.", joCount:"bilangan",
+  access:"Tetapan Akses", task:"Tugas", accessHelp:"Tanda untuk benarkan. Perubahan berkuat kuasa serta-merta; pengguna perlu muat semula halaman untuk melihat butang baru. Admin sentiasa ada akses penuh.",
+  T_job_create:"Cipta job", T_job_edit_plan:"Ubah pelan (sebelum pengeluaran)", T_job_edit_product:"Ubah produk (bila-bila masa)", T_job_release:"Lepaskan / kembali ke perancangan",
+  T_job_cancel:"Batalkan job", T_job_start:"Mula campuran", T_job_output:"Rekod output campuran & pembungkusan", T_job_done:"Tanda siap / buka semula",
+  T_job_transfer:"Pindah ke stor (TO)", T_job_qc:"Rekod keputusan QC", T_job_wastage:"Isi punca pembaziran", T_job_verify:"Sahkan pembaziran",
+  T_job_close:"Tutup job", T_job_remarks:"Tulis catatan", T_loss_report:"Lapor kerugian", T_loss_signoff:"Tandatangan keputusan bahan",
   editProduct:"Ubah produk", itemCode:"Kod Item", itemHelp:"Diisi sendiri daripada job terdahulu dengan produk yang sama, jika ada.",
   sum:"Jumlah", jobOrder:"No. JOB", bn:"B/N", batchOut:"Output kelompok", actFG:"Rekod output barang siap", uom:"UOM", qty:"Kuantiti", unitKg:"KG seunit",
   totalKg:"Jumlah KG", fgOut:"Output Pembungkusan / Barang Siap", perBatchHelp:"Isi KG sebenar bagi setiap kelompok (B/N). Kosongkan jika belum siap.",
@@ -313,8 +318,13 @@ const T = {
   exportCsv:"Download CSV", loggedAs:"Signed in as", machines:"Machines", addMachine:"Add machine",
   jobCreated:"Job created", pwMin:"Minimum 8 characters", loading:"Loading…", offline:"Offline - reconnecting",
   showing:"Showing", of:"of", moreBtn:"Show more", userHelp:"Users sign in with this username and password. One account can be used on several devices at the same time.",
-  roleHelp:"Planner: create & release jobs, close jobs. Production Supervisor and Operation: update mixing, packing, transfer, QC result, verify wastage and sign off loss reports.",
+  roleHelp:"What each role can do is set under Access Settings below.",
   joAdd:"＋ Add JOB", joFill:"Fill in sequence from first JOB", joDup:"Duplicate JOB numbers are marked red.", joCount:"count",
+  access:"Access Settings", task:"Task", accessHelp:"Tick to allow. Changes apply immediately; users need to refresh the page to see new buttons. Admin always has full access.",
+  T_job_create:"Create job", T_job_edit_plan:"Edit plan (before production)", T_job_edit_product:"Edit product (any time)", T_job_release:"Release / back to planning",
+  T_job_cancel:"Cancel job", T_job_start:"Start mixing", T_job_output:"Record mixing & packing output", T_job_done:"Mark done / reopen",
+  T_job_transfer:"Transfer to store (TO)", T_job_qc:"Record QC result", T_job_wastage:"Enter wastage cause", T_job_verify:"Verify wastage",
+  T_job_close:"Close job", T_job_remarks:"Write remarks", T_loss_report:"Report loss", T_loss_signoff:"Sign off disposition",
   editProduct:"Edit product", itemCode:"Item Code", itemHelp:"Filled in from the last job with the same product, if there is one.",
   sum:"Total", jobOrder:"JOB No.", bn:"B/N", batchOut:"Batch output", actFG:"Record finished goods output", uom:"UOM", qty:"Quantity", unitKg:"KG per unit",
   totalKg:"Total KG", fgOut:"Packing / Finished Goods Output", perBatchHelp:"Enter the actual KG for each batch (B/N). Leave blank if not done yet.",
@@ -340,7 +350,7 @@ let LANG = store.get("gfbp_lang","ms");
 const t = k => (T[LANG][k] ?? T.en[k] ?? k);
 
 // ======================= STATE =======================
-const S = { user:null, me:null, jobs:[], batches:[], losses:[], lossF:"OPEN", machines:[], users:[], target:1.0, tab:"jobs",
+const S = { user:null, me:null, perms:{}, jobs:[], batches:[], losses:[], lossF:"OPEN", machines:[], users:[], target:1.0, tab:"jobs",
   filter:"ACTIVE", q:"", machineF:"", limit:60, month:null, live:true, sortKey:"job_no", sortDir:-1 };
 const STATUSES = ["PLANNING","RELEASED","IN PROCESS","DONE","TRANSFERRED","CLOSED","CANCELLED"];
 const STEP = {"PLANNING":0,"RELEASED":1,"IN PROCESS":2,"DONE":3,"TRANSFERRED":4,"CLOSED":5,"CANCELLED":-1};
@@ -377,6 +387,9 @@ const LSTAGES = ["MIXING","PACKING","TRANSFER","RAW_MATERIAL"];
 const LTYPES = ["SPILLAGE","TORN_BAG","DAMAGED_PACK","MACHINE_FAULT","CONTAMINATION","RESIDUE","OTHER"];
 const LDISP = ["DISPOSE","REWORK","QUARANTINE","RETURN_TO_STOCK"];
 const can = (...roles) => S.me && roles.includes(S.me.role);
+const perm = task => !!S.me && (S.me.role==="admin" || !!S.perms[S.me.role+"|"+task]);
+const TASKS = ["job_create","job_edit_plan","job_edit_product","job_release","job_cancel","job_start","job_output","job_done","job_transfer","job_qc","job_wastage","job_verify","job_close","job_remarks","loss_report","loss_signoff"];
+const PROLES = ["planner","supervisor","operation","viewer"];
 function toast(msg, err){ const el=document.createElement("div"); el.className="toast"+(err?" err":""); el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(), err?5000:2400); }
 function errMsg(e){ const m = e?.message || String(e); if(LANG==="ms") return m.split(" / ")[0]; const p=m.split(" / "); return p[1]||p[0]; }
 const ICON = {
@@ -389,13 +402,15 @@ const ICON = {
 
 // ======================= DATA =======================
 async function loadAll(){
-  const [jobsR, mR, sR, lR, bR] = await Promise.all([
+  const [jobsR, mR, sR, lR, bR, pR] = await Promise.all([
     fetchAllJobs(),
     sb.from("machines").select("*").order("sort_order"),
     sb.from("app_settings").select("*"),
     sb.from("loss_reports").select("*").order("occurred_at",{ascending:false}).limit(5000),
-    sb.from("job_batches").select("*").order("id",{ascending:false}).range(0, 19999)
+    sb.from("job_batches").select("*").order("id",{ascending:false}).range(0, 19999),
+    sb.from("role_permissions").select("*")
   ]);
+  S.perms = {}; (pR.data||[]).forEach(x=>{ if(x.allowed) S.perms[x.role+"|"+x.task]=true; });
   S.batches = bR.data || [];
   S.jobs = jobsR;
   S.losses = lR.data || [];
@@ -543,7 +558,7 @@ function renderJobs(m){
      <input type="search" id="q" placeholder="${esc(t("search"))}" value="${esc(S.q)}">
      <select id="mf"><option value="">${t("machine")}: ${t("all")}</option>${machines.map(x=>`<option ${S.machineF===x?"selected":""}>${esc(x)}</option>`).join("")}</select>
      ${desk?`<button class="btn ghost" id="csv2">${t("exportCsv")}</button>`:""}
-     ${desk && can("admin","planner")?`<button class="btn primary" id="newJ">+ ${t("newJob")}</button>`:""}
+     ${desk && perm("job_create")?`<button class="btn primary" id="newJ">+ ${t("newJob")}</button>`:""}
    </div>
    <div class="chips">${chips.map(([k,l,n])=>`<button class="chip ${S.filter===k?"on":""}" data-f="${esc(k)}">${esc(l)}<b>${n}</b></button>`).join("")}</div>
    ${desk ? jobTable(shown) : `<div class="joblist">${shown.map(jobCard).join("") || `<div class="empty">${t("noData")}</div>`}</div>`}
@@ -621,25 +636,25 @@ async function openJob(id, keepScroll){
   const prevScroll = keepScroll ? ($(".sheet")?.scrollTop||0) : 0;
   const v = varPct(j); const role = S.me.role; const st = j.status;
   const acts = [];
-  const isA = role==="admin", isP = role==="planner"||isA, isS = role==="supervisor"||role==="operation"||isA, isQ = isS;
-  if(isP && st==="PLANNING") acts.push(["release",t("actRelease"),"primary"]);
-  if(isS && st==="RELEASED") acts.push(["start",t("actStart"),"primary"]);
-  if(isS && ["IN PROCESS","DONE"].includes(st)) acts.push(["mix",t("actMix"),""]);
-  if(isS && ["IN PROCESS","DONE"].includes(st)) acts.push(["pack",j.bulk_packing?t("actFG"):t("actPack"),""]);
-  if(isS && st==="IN PROCESS") acts.push(["done",t("actDone"),"primary"]);
-  if(isQ && ["IN PROCESS","DONE","TRANSFERRED"].includes(st)) acts.push(["qc",t("actQC"),""]);
-  if(isS && st==="DONE") acts.push(["transfer",t("actTransfer"),"primary"]);
-  if((isS||isP) && overTarget(j) && !["CLOSED","CANCELLED"].includes(st)) acts.push(["waste",t("actWaste"), j.wastage_cause?"":"danger"]);
-  if(isQ && overTarget(j) && j.wastage_cause && !j.wastage_verified_by) acts.push(["verify",t("actVerify"),""]);
-  if(isP && ["DONE","TRANSFERRED"].includes(st)) acts.push(["close",t("actClose"),"primary"]);
-  if(isS && st==="DONE" && !isA) acts.push(["reopen",t("actReopen"),"ghost"]);
+  const isA = role==="admin", P = perm, pre = ["PLANNING","RELEASED"].includes(st);
+  if(P("job_release") && st==="PLANNING") acts.push(["release",t("actRelease"),"primary"]);
+  if(P("job_start") && st==="RELEASED") acts.push(["start",t("actStart"),"primary"]);
+  if(P("job_output") && ["IN PROCESS","DONE"].includes(st)) acts.push(["mix",t("actMix"),""]);
+  if(P("job_output") && ["IN PROCESS","DONE"].includes(st)) acts.push(["pack",j.bulk_packing?t("actFG"):t("actPack"),""]);
+  if(P("job_done") && st==="IN PROCESS") acts.push(["done",t("actDone"),"primary"]);
+  if(P("job_qc") && ["IN PROCESS","DONE","TRANSFERRED"].includes(st)) acts.push(["qc",t("actQC"),""]);
+  if(P("job_transfer") && st==="DONE") acts.push(["transfer",t("actTransfer"),"primary"]);
+  if(P("job_wastage") && overTarget(j) && !["CLOSED","CANCELLED"].includes(st)) acts.push(["waste",t("actWaste"), j.wastage_cause?"":"danger"]);
+  if(P("job_verify") && overTarget(j) && j.wastage_cause && !j.wastage_verified_by) acts.push(["verify",t("actVerify"),""]);
+  if(P("job_close") && ["DONE","TRANSFERRED"].includes(st)) acts.push(["close",t("actClose"),"primary"]);
+  if(P("job_done") && st==="DONE" && !isA) acts.push(["reopen",t("actReopen"),"ghost"]);
   if(isA && ["DONE","TRANSFERRED","CLOSED"].includes(st)) acts.push(["reopen",t("actReopen"),"ghost"]);
-  if(isP && ["PLANNING","RELEASED"].includes(st)) acts.push(["edit",t("actEdit"),"ghost"]);
-  if(isP && st==="RELEASED") acts.push(["unrelease",t("actUnrelease"),"ghost"]);
-  if(isP && ["PLANNING","RELEASED"].includes(st)) acts.push(["cancel",t("actCancel"),"danger"]);
+  if(P("job_edit_plan") && pre) acts.push(["edit",t("actEdit"),"ghost"]);
+  if(P("job_release") && st==="RELEASED") acts.push(["unrelease",t("actUnrelease"),"ghost"]);
+  if(P("job_cancel") && pre) acts.push(["cancel",t("actCancel"),"danger"]);
   if(isA && st==="CANCELLED") acts.push(["unrelease",t("actUnrelease"),"ghost"]);
-  if(role!=="viewer" && st!=="CANCELLED") acts.push(["reportloss","⚠ "+t("reportLoss"),"ghost"]);
-  if((role==="operation" || (role==="planner" && !["PLANNING","RELEASED"].includes(st))) && st!=="CANCELLED") acts.push(["editproduct","✎ "+t("editProduct"),"ghost"]);
+  if(P("loss_report") && st!=="CANCELLED") acts.push(["reportloss","⚠ "+t("reportLoss"),"ghost"]);
+  if(!isA && P("job_edit_product") && !(pre && P("job_edit_plan")) && st!=="CANCELLED") acts.push(["editproduct","✎ "+t("editProduct"),"ghost"]);
   if(isA) acts.push(["adminedit","✎ "+t("adminEdit"),"ghost"]);
   const jl = S.losses.filter(l=>l.job_id===j.id);
   const bts = batchesOf(j.id);
@@ -937,7 +952,7 @@ function openJobForm(j){
       <div class="muted small" id="j_jo" style="margin-top:4px"></div></div>
     <label class="check"><input type="checkbox" id="j_bulk" ${j?.bulk_packing?"checked":""}> ${t("bulk")}</label>
     <label class="f">${t("notes")}</label><textarea id="j_notes">${esc(j?.notes||"")}</textarea>
-    ${!isEdit?`<label class="check"><input type="checkbox" id="j_rel"> ${t("releaseNow")}</label>`:""}
+    ${!isEdit && perm("job_release")?`<label class="check"><input type="checkbox" id="j_rel"> ${t("releaseNow")}</label>`:""}
     <div id="jerr"></div>
     <div class="grid2" style="margin-top:12px"><button type="button" class="btn ghost" id="jc">${t("cancel")}</button><button class="btn primary" id="js">${t("save")}</button></div>
   </form>`;
@@ -973,7 +988,7 @@ function openJobForm(j){
     try{
       if(isEdit){ await updateJob(j.id, row); await refreshBatches(j.id); toast(t("saved")); openJob(j.id); }
       else {
-        row.status = $("#j_rel").checked ? "RELEASED" : "PLANNING";
+        row.status = $("#j_rel") && $("#j_rel").checked ? "RELEASED" : "PLANNING";
         const { data, error } = await sb.from("job_orders").insert(row).select().single();
         if(error) throw error;
         upsertLocal(data); await refreshBatches(data.id);
@@ -1114,7 +1129,7 @@ function renderLoss(m){
    <div class="toolbar"><h2 class="pg grow" style="margin:0">${t("lossTitle")}</h2>
      <select id="mon">${months.map(x=>`<option value="${x}" ${x===S.month?"selected":""}>${monLabel(x)}</option>`).join("")}</select>
      ${desk?`<button class="btn ghost" id="lcsv">${t("exportCsv")}</button>`:""}
-     ${can("admin","planner","supervisor","operation")?`<button class="btn primary" id="newL">+ ${t("reportLoss")}</button>`:""}</div>
+     ${perm("loss_report")?`<button class="btn primary" id="newL">+ ${t("reportLoss")}</button>`:""}</div>
    <div class="kpis">
      <div class="card kpi"><div class="l">${t("lossMonth")}</div><div class="v">${nf(total, total%1?2:0)}</div><div class="s">KG · ${inMonth.length}</div></div>
      <div class="card kpi"><div class="l">${t("OPEN")}</div><div class="v" style="${openN?"color:var(--warn)":""}">${openN}</div><div class="s">${t("dispHelp").split(".")[0]}</div></div>
@@ -1139,8 +1154,8 @@ const toMY = ts => new Date(ts).toLocaleString("sv-SE",{timeZone:"Asia/Kuala_Lum
 async function openLoss(id){
   const l = S.losses.find(x=>x.id===id); if(!l) return;
   const j = S.jobs.find(x=>x.id===l.job_id);
-  const canSign = can("admin","supervisor","operation");
-  const canEdit = (l.status==="OPEN" && (l.reported_by===S.me.user_id || canSign)) || can("admin");
+  const canSign = perm("loss_signoff");
+  const canEdit = (l.status==="OPEN" && ((l.reported_by===S.me.user_id && perm("loss_report")) || canSign)) || can("admin");
   const body = `
    <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="badge ${l.status==="OPEN"?"s-IN_PROCESS":"s-CLOSED"}">${t(l.status)}</span><span class="muted small">${fdt(l.occurred_at)}</span></div>
    <div class="card sec"><div style="font-size:18px;font-weight:700;margin-bottom:6px">${esc(t(l.loss_type))} · ${kg(l.qty_kg)}</div>
@@ -1291,7 +1306,7 @@ const GUIDE = {
    <tr><td><b>Operasi</b> (Pengawal Inventori Pengeluaran)</td><td>Sama seperti Penyelia Pengeluaran.</td></tr>
    <tr><td><b>Lihat Sahaja</b></td><td>Lihat semua maklumat. Tidak boleh ubah apa-apa.</td></tr>
    <tr><td><b>Admin</b></td><td>Semua di atas, serta urus pengguna, mesin dan tetapan.</td></tr></table>
-   <p class="muted small">Butang yang anda lihat bergantung kepada peranan anda. Jika butang tiada, peranan anda tidak dibenarkan untuk langkah itu.</p>`},
+   <p class="muted small">Ini tetapan asal. Admin boleh menukar apa yang setiap peranan boleh buat di <b>Lagi → Tetapan Akses</b>. Butang yang anda lihat bergantung kepada tetapan ini.</p>`},
   {id:"planner", roles:["planner","admin"], h:"4. Perancang: cipta dan urus job", b:`
    <ol><li>Di skrin <b>Job</b> (PC), klik <b>+ Job Baru</b>.</li>
    <li>Pilih <b>Mesin</b>, <b>Tarikh Pelan</b>, taip <b>Produk</b> dan <b>Pelanggan</b> (senarai cadangan akan muncul).</li>
@@ -1371,7 +1386,7 @@ const GUIDE = {
    <tr><td><b>Operation</b> (Production Inventory Controller)</td><td>Same as Production Supervisor.</td></tr>
    <tr><td><b>View Only</b></td><td>See everything. Cannot change anything.</td></tr>
    <tr><td><b>Admin</b></td><td>All of the above, plus users, machines and settings.</td></tr></table>
-   <p class="muted small">The buttons you see depend on your role. If a button is missing, your role is not allowed to do that step.</p>`},
+   <p class="muted small">These are the default settings. Admin can change what each role can do under <b>More → Access Settings</b>. The buttons you see follow these settings.</p>`},
   {id:"planner", roles:["planner","admin"], h:"4. Planner: create and manage jobs", b:`
    <ol><li>On the <b>Jobs</b> screen (PC), click <b>+ New Job</b>.</li>
    <li>Choose the <b>Machine</b> and <b>Plan Date</b>, and type the <b>Product</b> and <b>Customer</b> (suggestions appear as you type).</li>
@@ -1461,6 +1476,11 @@ async function renderMore(m){
    <div class="row" style="margin:16px 0 8px"><h3 class="grow" style="margin:0;font-size:16px">${t("users")}</h3><button class="btn" id="addU">+ ${t("addUser")}</button></div>
    <div class="card" id="ulist"><div class="listitem muted">${t("loading")}</div></div>
    <div class="muted small" style="margin:6px 2px 0">${t("roleHelp")}</div>
+   <h3 style="margin:18px 0 8px;font-size:16px">${t("access")}</h3>
+   <div class="card scroll-x" style="margin-bottom:6px"><table class="t" id="permT"><tr><th>${t("task")}</th>${PROLES.map(r=>`<th style="text-align:center">${t(r)}</th>`).join("")}<th style="text-align:center">${t("admin")}</th></tr>
+     ${TASKS.map(k=>`<tr><td>${esc(t("T_"+k))}</td>${PROLES.map(r=>`<td style="text-align:center"><input type="checkbox" style="width:20px;height:20px" data-pr="${r}" data-pt="${k}" ${S.perms[r+"|"+k]?"checked":""}></td>`).join("")}<td style="text-align:center"><input type="checkbox" checked disabled style="width:20px;height:20px"></td></tr>`).join("")}
+   </table></div>
+   <div class="muted small" style="margin:0 2px 8px">${t("accessHelp")}</div>
    <h3 style="margin:18px 0 8px;font-size:16px">${t("settings")}</h3>
    <div class="card" style="margin-bottom:10px">
      <div class="listitem"><span class="grow">${t("wasteTarget")}</span><input type="number" id="wt" step="0.1" min="0" value="${S.target}" style="width:90px"><button class="btn" id="wts">${t("save")}</button></div>
@@ -1477,6 +1497,13 @@ async function renderMore(m){
     const { error } = await sb.auth.updateUser({ password: v.p }); if(error) throw error; closeSheet(); toast(t("saved"));
   });
   if(!isA) return;
+  m.querySelectorAll("[data-pr]").forEach(cb => cb.onchange = async () => {
+    const r = cb.dataset.pr, k = cb.dataset.pt, v = cb.checked;
+    const { error } = await sb.from("role_permissions").update({ allowed: v }).eq("role", r).eq("task", k);
+    if(error){ cb.checked = !v; return toast(errMsg(error), true); }
+    if(v) S.perms[r+"|"+k] = true; else delete S.perms[r+"|"+k];
+    toast(`${t(r)}: ${t("T_"+k)} ${v?"✓":"✗"}`);
+  });
   $("#wts").onclick = async () => { const v=Number($("#wt").value); const { error } = await sb.from("app_settings").update({value:String(v)}).eq("key","wastage_target_pct"); if(error) return toast(errMsg(error),true); S.target=v; toast(t("saved")); };
   $("#addM").onclick = () => formSheet(t("addMachine"), [{k:"n",label:t("machine"),req:true}], async v => {
     const { data, error } = await sb.from("machines").insert({name:v.n.trim().toUpperCase(), sort_order:S.machines.length+1}).select().single(); if(error) throw error;
