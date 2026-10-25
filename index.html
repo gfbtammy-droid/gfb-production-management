@@ -148,14 +148,14 @@ h2.pg{font-size:19px;margin:4px 0 12px}
 .desk-only{display:none}
 /* ---------- PC layout ---------- */
 @media(min-width:900px){
-  .desk-only{display:initial}
+  .desk-only{display:revert}
   .mob-only{display:none!important}
   .wrap{max-width:1500px;padding:0 24px}
   header.top{padding:10px 0 10px 220px}
   header.top h1{font-size:18px}
   nav.bottom{top:0;bottom:0;right:auto;width:220px;border-top:0;border-right:1px solid var(--line);padding:0;z-index:30}
   nav.bottom .wrap{flex-direction:column;padding:0;max-width:none;height:100%}
-  nav.bottom .brand{display:flex;align-items:center;gap:10px;padding:14px 16px;height:57px;background:var(--brand);color:var(--brand-ink);font-weight:700}
+  nav.bottom .brand{display:flex;align-items:center;gap:10px;padding:10px 14px;height:57px;font-size:13.5px;line-height:1.2;background:var(--brand);color:var(--brand-ink);font-weight:700}
   nav.bottom button{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;padding:12px 18px;font-size:14.5px;border-left:3px solid transparent}
   nav.bottom button.on{background:var(--brand-soft);border-left-color:var(--brand)}
   nav.bottom .who{margin-top:auto;padding:14px 18px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
@@ -184,6 +184,24 @@ table.jobs tbody tr{cursor:pointer}
 table.jobs tbody tr:hover td{background:var(--brand-soft)}
 table.jobs tr.sel td{background:var(--brand-soft)}
 .bad-t{color:var(--bad);font-weight:650}
+details.guide{margin-bottom:8px;padding:0}
+details.guide summary{cursor:pointer;padding:14px 16px;font-weight:650;font-size:15.5px;list-style:none;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+details.guide summary::-webkit-details-marker{display:none}
+details.guide summary::before{content:"›";display:inline-block;transition:transform .15s;color:var(--muted);font-size:20px;line-height:1;width:12px}
+details.guide[open] summary::before{transform:rotate(90deg)}
+details.guide .gbody{padding:0 16px 14px 36px;font-size:14.5px}
+details.guide .gbody p{margin:8px 0}
+details.guide .gbody ul,details.guide .gbody ol{margin:6px 0;padding-left:20px}
+details.guide .gbody li{margin:4px 0}
+.steps-g{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.print-only{display:none}
+@media print{
+  header.top,nav.bottom,.no-print,.fab{display:none!important}
+  .print-only{display:block}
+  main{padding:0!important}
+  body{background:#fff;color:#000}
+  .card{box-shadow:none;border-color:#ccc;break-inside:avoid}
+}
 </style>
 </head>
 <body>
@@ -229,6 +247,7 @@ const T = {
   jobCreated:"Job dicipta", pwMin:"Minimum 8 aksara", loading:"Memuatkan…", offline:"Luar talian - sedang menyambung semula",
   showing:"Menunjukkan", of:"daripada", moreBtn:"Tunjuk lagi", userHelp:"Pengguna log masuk dengan nama pengguna dan kata laluan ini. Satu akaun boleh digunakan di beberapa peranti serentak.",
   roleHelp:"Perancang: cipta & lepaskan job, tutup job. Penyelia: kemas kini campuran, pembungkusan, pindahan. QC: keputusan QC & sahkan pembaziran.",
+  guide:"Panduan Pengguna", expandAll:"Buka / tutup semua", print:"Cetak", guideIntro:"Bahagian untuk peranan anda dibuka dahulu. Peranan anda:",
   loss:"Kerugian", lossTitle:"Laporan Kerugian Pengeluaran", reportLoss:"Lapor Kerugian", lossNo:"No. Laporan", occurred:"Masa kejadian",
   stage:"Peringkat", lossType:"Jenis kerugian", material:"Bahan / produk", qtyLost:"Kuantiti hilang (KG)", whatHappened:"Apa yang berlaku",
   immAction:"Tindakan segera", photos:"Gambar", addPhoto:"Ambil / pilih gambar", reporter:"Dilapor oleh", noJob:"- Tiada job (cth. bahan mentah di stor) -",
@@ -273,6 +292,7 @@ const T = {
   jobCreated:"Job created", pwMin:"Minimum 8 characters", loading:"Loading…", offline:"Offline - reconnecting",
   showing:"Showing", of:"of", moreBtn:"Show more", userHelp:"Users sign in with this username and password. One account can be used on several devices at the same time.",
   roleHelp:"Planner: create & release jobs, close jobs. Supervisor: update mixing, packing, transfer. QC: QC result & verify wastage.",
+  guide:"User Guide", expandAll:"Expand / collapse all", print:"Print", guideIntro:"Sections for your role are opened first. Your role:",
   loss:"Losses", lossTitle:"Production Loss Reports", reportLoss:"Report Loss", lossNo:"Report No.", occurred:"Time of incident",
   stage:"Stage", lossType:"Type of loss", material:"Material / product", qtyLost:"Quantity lost (KG)", whatHappened:"What happened",
   immAction:"Immediate action", photos:"Photos", addPhoto:"Take / choose photos", reporter:"Reported by", noJob:"- No job (e.g. raw material in store) -",
@@ -429,6 +449,7 @@ function render(){
   $("#app").innerHTML = `
   <header class="top"><div class="wrap">
     <h1><span class="live ${S.live?"":"off"}" title="${S.live?"Live":t("offline")}"></span>${t("appName")}</h1>
+    <button class="pill-btn" id="helpBtn" title="${t("guide")}" aria-label="${t("guide")}">?</button>
     <button class="pill-btn" id="langBtn">${LANG==="ms"?"EN":"BM"}</button>
   </div></header>
   <main><div class="wrap" id="main"></div></main>
@@ -438,6 +459,7 @@ function render(){
     <div class="who"><b style="color:var(--ink)">${esc(S.me.full_name)}</b><br>${t(S.me.role)}</div>
   </div></nav>`;
   $("#langBtn").onclick = () => { LANG = LANG==="ms"?"en":"ms"; store.set("gfbp_lang",LANG); render(); };
+  $("#helpBtn").onclick = () => { S.tab = "guide"; render(); window.scrollTo(0,0); };
   document.querySelectorAll("nav.bottom button").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab; S.limit=60; render(); window.scrollTo(0,0);});
   renderMainOnly();
 }
@@ -447,6 +469,7 @@ function renderMainOnly(){
   else if(S.tab==="dash") renderDash(m);
   else if(S.tab==="waste") renderWaste(m);
   else if(S.tab==="loss") renderLoss(m);
+  else if(S.tab==="guide") renderGuide(m);
   else renderMore(m);
 }
 
@@ -1024,6 +1047,184 @@ function exportLossCsv(list){
   setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
 }
 
+// ======================= USER GUIDE =======================
+const ST_FLOW = ["PLANNING","RELEASED","IN PROCESS","DONE","TRANSFERRED","CLOSED"];
+const GUIDE = {
+ ms: [
+  {id:"start", roles:["all"], h:"1. Mula guna", b:`
+   <p><b>Log masuk</b> dengan nama pengguna dan kata laluan yang diberi oleh admin. Tiada e-mel diperlukan.</p>
+   <ul><li>Satu akaun boleh digunakan di PC dan telefon <b>serentak</b>. Semua skrin dikemas kini secara langsung.</li>
+   <li>Titik <b>hijau</b> di sebelah nama aplikasi bermaksud sambungan langsung aktif. Titik <b>merah</b> bermaksud luar talian; muat semula halaman.</li>
+   <li>Butang <b>EN / BM</b> di atas menukar bahasa. Pilihan anda diingati di peranti itu.</li>
+   <li>Tukar kata laluan anda di <b>Lagi → Tukar kata laluan saya</b>.</li>
+   <li><b>Telefon:</b> buka pautan dalam Chrome (Android) atau Safari (iPhone), kemudian pilih <i>Add to Home screen</i> supaya ia dibuka seperti aplikasi.</li></ul>`},
+  {id:"flow", roles:["all"], h:"2. Aliran status job", b:`
+   <div class="steps-g">${ST_FLOW.map(s=>`<span class="badge ${"s-"+s.replace(" ","_")}">${T.ms[s]}</span>`).join(" → ")}</div>
+   <table class="t" style="margin-top:10px"><tr><th>Status</th><th>Maksud</th><th>Siapa gerakkan</th></tr>
+   <tr><td>Perancangan</td><td>Job dicipta, belum dihantar ke lantai pengeluaran</td><td>Perancang</td></tr>
+   <tr><td>Dilepaskan</td><td>Sedia untuk dikeluarkan</td><td>Perancang</td></tr>
+   <tr><td>Dalam Proses</td><td>Campuran sudah bermula</td><td>Penyelia</td></tr>
+   <tr><td>Siap</td><td>Output campuran dan pembungkusan direkod</td><td>Penyelia</td></tr>
+   <tr><td>Dipindahkan</td><td>Dihantar ke stor dengan No. TO REQ</td><td>Penyelia</td></tr>
+   <tr><td>Ditutup</td><td>Selesai sepenuhnya</td><td>Perancang</td></tr></table>
+   <p class="muted small">Job juga boleh <b>Dibatalkan</b> semasa Perancangan atau Dilepaskan.</p>`},
+  {id:"roles", roles:["all"], h:"3. Siapa buat apa", b:`
+   <table class="t"><tr><th>Peranan</th><th>Boleh buat</th></tr>
+   <tr><td><b>Perancang</b></td><td>Cipta, ubah, lepaskan dan batalkan job. Tutup job. Lapor kerugian.</td></tr>
+   <tr><td><b>Penyelia Pengeluaran</b></td><td>Mula campuran, rekod output, tanda siap, pindah ke stor, isi punca pembaziran, lapor kerugian, <b>tandatangan keputusan bahan</b>.</td></tr>
+   <tr><td><b>QC</b></td><td>Rekod keputusan QC (PASS / HOLD / FAIL), sahkan pembaziran, lapor kerugian.</td></tr>
+   <tr><td><b>Lihat Sahaja</b></td><td>Lihat semua maklumat. Tidak boleh ubah apa-apa.</td></tr>
+   <tr><td><b>Admin</b></td><td>Semua di atas, serta urus pengguna, mesin dan tetapan.</td></tr></table>
+   <p class="muted small">Butang yang anda lihat bergantung kepada peranan anda. Jika butang tiada, peranan anda tidak dibenarkan untuk langkah itu.</p>`},
+  {id:"planner", roles:["planner","admin"], h:"4. Perancang: cipta dan urus job", b:`
+   <ol><li>Di skrin <b>Job</b> (PC), klik <b>+ Job Baru</b>.</li>
+   <li>Pilih <b>Mesin</b>, <b>Tarikh Pelan</b>, taip <b>Produk</b> dan <b>Pelanggan</b> (senarai cadangan akan muncul).</li>
+   <li>Isi <b>Kuantiti / Kelompok</b> dan <b>Bil. Kelompok</b>. Jumlah dikira sendiri. Satu job boleh ada sehingga 99 kelompok, jadi tidak perlu pecah pesanan kepada beberapa baris.</li>
+   <li>Tanda <b>Pembungkusan pukal</b> jika tiada JO pembungkusan.</li>
+   <li>Tanda <b>Lepaskan terus</b> jika job sedia untuk pengeluaran, kemudian <b>Simpan</b>.</li></ol>
+   <p><b>Nombor JO dikeluarkan secara automatik</b>: satu JO campuran bagi setiap kelompok dan satu JO pembungkusan. Jangan taip nombor JO.</p>
+   <p><b>Ubah pelan</b> hanya dibenarkan semasa Perancangan atau Dilepaskan. Jika kelompok ditambah, JO baru ditambah sendiri. Selepas campuran bermula, pelan dikunci.</p>
+   <p><b>Tutup job</b> apabila status Siap atau Dipindahkan. Jika pembaziran tidak dijelaskan melebihi sasaran, sistem minta punca dahulu.</p>`},
+  {id:"supervisor", roles:["supervisor","admin"], h:"5. Penyelia: kemas kini pengeluaran", b:`
+   <ol><li>Buka job yang <b>Dilepaskan</b> dan tekan <b>Mula campuran</b>. Tarikh hari ini diisi sendiri.</li>
+   <li>Selepas campuran, tekan <b>Rekod output campuran</b> dan isi KG sebenar.</li>
+   <li>Selepas pembungkusan, tekan <b>Rekod output pembungkusan</b> dan isi KG sebenar.</li>
+   <li>Tekan <b>Tanda siap</b>. Sistem akan minta output yang belum diisi.</li>
+   <li>Apabila dihantar ke stor, tekan <b>Pindah ke stor (TO)</b> dan isi No. TO REQ.</li></ol>
+   <p>Jika varians melebihi sasaran, tekan <b>Isi punca pembaziran</b> dan tulis punca serta tindakan. Silap rekod? Tekan <b>Buka semula</b> semasa status Siap.</p>`},
+  {id:"qc", roles:["qc","admin"], h:"6. QC: keputusan dan pengesahan", b:`
+   <ul><li>Buka job dan tekan <b>Rekod keputusan QC</b>: PASS, HOLD atau FAIL, dengan tarikh dan catatan.</li>
+   <li><b>HOLD atau FAIL menyekat pemindahan ke stor</b> sehingga keputusan ditukar kepada PASS.</li>
+   <li>Untuk job yang pembaziran melebihi sasaran dan sudah ada punca, tekan <b>Sahkan pembaziran</b>.</li></ul>`},
+  {id:"waste", roles:["all"], h:"7. Pembaziran: cara dikira", b:`
+   <ul><li><b>Varians (KG)</b> = output campuran − output pembungkusan. Dikira automatik.</li>
+   <li><b>Varians %</b> = varians ÷ output campuran.</li>
+   <li><b>Kadar pembaziran bulanan</b> = jumlah varians ÷ jumlah output campuran bagi job yang dibungkus dalam bulan itu.</li>
+   <li><b>Kerugian dilapor</b> (tumpahan, beg koyak dan lain-lain) pada peringkat campuran atau pembungkusan ditolak daripada varians job itu. Baki dipanggil <b>varians tidak dijelaskan</b>.</li>
+   <li>Hanya varians tidak dijelaskan yang melebihi sasaran (asal 1.0%) akan ditanda <b>Perlu punca</b> dan menyekat penutupan job.</li>
+   <li>Gred: Diterima ≤ sasaran · Pantau ≤ 2× · Perlu Tindakan ≤ 5× · Kritikal &gt; 5×.</li>
+   <li>Job pembungkusan pukal dan job repack tidak dikira dalam kadar pembaziran kerana tiada dua output untuk dibandingkan.</li></ul>`},
+  {id:"loss", roles:["all"], h:"8. Laporan Kerugian", b:`
+   <ol><li>Tekan <b>+ Lapor Kerugian</b> di menu Kerugian, atau dari dalam job (butang ⚠ Lapor Kerugian).</li>
+   <li>Pilih job (atau "Tiada job" untuk bahan mentah di stor), peringkat dan jenis kerugian.</li>
+   <li>Isi bahan, KG hilang, masa, apa yang berlaku dan tindakan segera.</li>
+   <li>Ambil <b>gambar</b> terus dengan kamera telefon (maksimum 6).</li>
+   <li>Simpan. Nombor LOSS-xxxx diberi automatik.</li></ol>
+   <p><b>Keputusan bahan</b> (Buang / Proses semula / Kuarantin / Kembali ke stok) ditandatangani oleh <b>penyelia pengeluaran atau admin</b> sahaja. Laporan tidak boleh ditutup tanpa keputusan, dan dikunci selepas ditutup.</p>
+   <p class="muted small">Kecederaan pekerja dilapor dalam daftar insiden DOSH (CMMS), bukan di sini.</p>`},
+  {id:"dash", roles:["all"], h:"9. Papan Pemuka", b:`
+   <ul><li><b>Dirancang</b>: jumlah KG job mengikut tarikh pelan dalam bulan dipilih.</li>
+   <li><b>Output</b>: KG dibungkus mengikut tarikh pembungkusan sebenar (pukal: output campuran).</li>
+   <li><b>Pencapaian</b> = Output ÷ Dirancang.</li>
+   <li>Klik mana-mana status di <b>Operasi Semasa</b> untuk terus ke senarai job itu.</li></ul>`},
+  {id:"admin", roles:["admin"], h:"10. Admin: pengguna dan tetapan", b:`
+   <ul><li><b>Tambah pengguna</b>: Lagi → Pengguna → + Tambah Pengguna. Isi nama, nama pengguna, peranan dan kata laluan sementara (minimum 8 aksara). Beri butiran kepada pekerja.</li>
+   <li><b>Lupa kata laluan</b>: buka pengguna itu dan isi kata laluan baru.</li>
+   <li><b>Pekerja berhenti</b>: tukar kepada OFF. Sejarah mereka kekal.</li>
+   <li><b>Sasaran pembaziran</b> dan senarai <b>mesin</b> boleh diubah di Lagi → Tetapan.</li>
+   <li><b>Muat turun CSV</b> untuk job dan laporan kerugian (boleh dibuka dalam Excel).</li></ul>`},
+  {id:"faq", roles:["all"], h:"11. Soalan lazim", b:`
+   <p><b>Mesej merah "tidak boleh menukar…"</b>: peranan anda tidak dibenarkan untuk langkah itu. Minta orang yang betul atau admin.</p>
+   <p><b>Data tidak muncul</b>: semak titik hijau di atas, kemudian muat semula halaman.</p>
+   <p><b>Tersilap isi output</b>: penyelia boleh rekod semula output selagi job belum Dipindahkan. Selepas itu, minta admin.</p>
+   <p><b>Semua perubahan direkod</b> dalam Sejarah setiap job, dengan nama dan masa.</p>`}
+ ],
+ en: [
+  {id:"start", roles:["all"], h:"1. Getting started", b:`
+   <p><b>Sign in</b> with the username and password given by the admin. No email is needed.</p>
+   <ul><li>One account can be used on a PC and a phone <b>at the same time</b>. All screens update live.</li>
+   <li>A <b>green</b> dot next to the app name means the live connection is on. A <b>red</b> dot means offline; refresh the page.</li>
+   <li>The <b>EN / BM</b> button at the top switches language. Your choice is remembered on that device.</li>
+   <li>Change your password under <b>More → Change my password</b>.</li>
+   <li><b>Phone:</b> open the link in Chrome (Android) or Safari (iPhone), then choose <i>Add to Home screen</i> so it opens like an app.</li></ul>`},
+  {id:"flow", roles:["all"], h:"2. Job status flow", b:`
+   <div class="steps-g">${ST_FLOW.map(s=>`<span class="badge ${"s-"+s.replace(" ","_")}">${T.en[s]}</span>`).join(" → ")}</div>
+   <table class="t" style="margin-top:10px"><tr><th>Status</th><th>Meaning</th><th>Moved by</th></tr>
+   <tr><td>Planning</td><td>Job created, not yet sent to the floor</td><td>Planner</td></tr>
+   <tr><td>Released</td><td>Ready for production</td><td>Planner</td></tr>
+   <tr><td>In Process</td><td>Mixing has started</td><td>Supervisor</td></tr>
+   <tr><td>Done</td><td>Mixing and packing output recorded</td><td>Supervisor</td></tr>
+   <tr><td>Transferred</td><td>Sent to store with a TO REQ No.</td><td>Supervisor</td></tr>
+   <tr><td>Closed</td><td>Fully complete</td><td>Planner</td></tr></table>
+   <p class="muted small">A job can also be <b>Cancelled</b> while in Planning or Released.</p>`},
+  {id:"roles", roles:["all"], h:"3. Who does what", b:`
+   <table class="t"><tr><th>Role</th><th>Can do</th></tr>
+   <tr><td><b>Planner</b></td><td>Create, edit, release and cancel jobs. Close jobs. Report losses.</td></tr>
+   <tr><td><b>Production Supervisor</b></td><td>Start mixing, record outputs, mark done, transfer to store, enter wastage cause, report losses, <b>sign off material disposition</b>.</td></tr>
+   <tr><td><b>QC</b></td><td>Record QC result (PASS / HOLD / FAIL), verify wastage, report losses.</td></tr>
+   <tr><td><b>View Only</b></td><td>See everything. Cannot change anything.</td></tr>
+   <tr><td><b>Admin</b></td><td>All of the above, plus users, machines and settings.</td></tr></table>
+   <p class="muted small">The buttons you see depend on your role. If a button is missing, your role is not allowed to do that step.</p>`},
+  {id:"planner", roles:["planner","admin"], h:"4. Planner: create and manage jobs", b:`
+   <ol><li>On the <b>Jobs</b> screen (PC), click <b>+ New Job</b>.</li>
+   <li>Choose the <b>Machine</b> and <b>Plan Date</b>, and type the <b>Product</b> and <b>Customer</b> (suggestions appear as you type).</li>
+   <li>Enter <b>Qty per Batch</b> and <b>No. of Batches</b>. The total is calculated for you. One job can hold up to 99 batches, so there is no need to split an order across rows.</li>
+   <li>Tick <b>Bulk packing</b> if there is no packing JO.</li>
+   <li>Tick <b>Release to production now</b> if the job is ready, then <b>Save</b>.</li></ol>
+   <p><b>JO numbers are issued automatically</b>: one mixing JO per batch plus one packing JO. Do not type JO numbers.</p>
+   <p><b>Edit plan</b> is allowed only in Planning or Released. Adding batches adds new JO numbers automatically. Once mixing starts, the plan is locked.</p>
+   <p><b>Close job</b> when it is Done or Transferred. If unexplained wastage is above target, the system asks for a cause first.</p>`},
+  {id:"supervisor", roles:["supervisor","admin"], h:"5. Supervisor: update production", b:`
+   <ol><li>Open a <b>Released</b> job and press <b>Start mixing</b>. Today's date is filled in.</li>
+   <li>After mixing, press <b>Record mixing output</b> and enter the actual KG.</li>
+   <li>After packing, press <b>Record packing output</b> and enter the actual KG.</li>
+   <li>Press <b>Mark done</b>. The system asks for any output still missing.</li>
+   <li>When sent to store, press <b>Transfer to store (TO)</b> and enter the TO REQ No.</li></ol>
+   <p>If the variance is above target, press <b>Enter wastage cause</b> and write the cause and action. Entered something wrong? Press <b>Reopen</b> while the job is Done.</p>`},
+  {id:"qc", roles:["qc","admin"], h:"6. QC: results and verification", b:`
+   <ul><li>Open the job and press <b>Record QC result</b>: PASS, HOLD or FAIL, with date and remarks.</li>
+   <li><b>HOLD or FAIL blocks the transfer to store</b> until the result is changed to PASS.</li>
+   <li>For jobs over the wastage target that already have a cause, press <b>Verify wastage</b>.</li></ul>`},
+  {id:"waste", roles:["all"], h:"7. Wastage: how it is calculated", b:`
+   <ul><li><b>Variance (KG)</b> = mixing output − packing output. Calculated automatically.</li>
+   <li><b>Variance %</b> = variance ÷ mixing output.</li>
+   <li><b>Monthly wastage rate</b> = total variance ÷ total mixing output for jobs packed in that month.</li>
+   <li><b>Reported losses</b> (spillage, torn bags and so on) at the mixing or packing stage are deducted from that job's variance. What remains is the <b>unexplained variance</b>.</li>
+   <li>Only unexplained variance above the target (default 1.0%) is flagged <b>Needs cause</b> and blocks closing the job.</li>
+   <li>Grades: Acceptable ≤ target · Monitor ≤ 2× · Action Required ≤ 5× · Critical &gt; 5×.</li>
+   <li>Bulk packing and repack jobs are left out of the wastage rate because there are not two outputs to compare.</li></ul>`},
+  {id:"loss", roles:["all"], h:"8. Production Loss Reports", b:`
+   <ol><li>Press <b>+ Report Loss</b> on the Losses screen, or from inside a job (the ⚠ Report Loss button).</li>
+   <li>Choose the job (or "No job" for raw material in the store), the stage and the type of loss.</li>
+   <li>Enter the material, KG lost, time, what happened and the immediate action.</li>
+   <li>Take <b>photos</b> straight from the phone camera (up to 6).</li>
+   <li>Save. A LOSS-xxxx number is issued automatically.</li></ol>
+   <p>The <b>disposition</b> (Dispose / Rework / Quarantine / Return to stock) is signed off by a <b>production supervisor or admin</b> only. A report cannot be closed without one, and is locked once closed.</p>
+   <p class="muted small">Injuries to staff go in the DOSH incident register (CMMS), not here.</p>`},
+  {id:"dash", roles:["all"], h:"9. Dashboard", b:`
+   <ul><li><b>Planned</b>: total KG of jobs by plan date in the selected month.</li>
+   <li><b>Output</b>: KG packed, by actual packing date (bulk jobs: mixing output).</li>
+   <li><b>Achievement</b> = Output ÷ Planned.</li>
+   <li>Click any status under <b>Live Operations</b> to jump to that job list.</li></ul>`},
+  {id:"admin", roles:["admin"], h:"10. Admin: users and settings", b:`
+   <ul><li><b>Add a user</b>: More → Users → + Add User. Enter the name, username, role and a temporary password (at least 8 characters). Give the details to the staff member.</li>
+   <li><b>Forgotten password</b>: open that user and enter a new password.</li>
+   <li><b>Staff who leave</b>: switch them to OFF. Their history is kept.</li>
+   <li><b>Wastage target</b> and the <b>machine</b> list can be changed under More → Settings.</li>
+   <li><b>Download CSV</b> for jobs and loss reports (opens in Excel).</li></ul>`},
+  {id:"faq", roles:["all"], h:"11. FAQ", b:`
+   <p><b>Red message "cannot change…"</b>: your role is not allowed to do that step. Ask the right person or the admin.</p>
+   <p><b>Data not showing</b>: check the green dot at the top, then refresh the page.</p>
+   <p><b>Wrong output entered</b>: a supervisor can re-record outputs until the job is Transferred. After that, ask the admin.</p>
+   <p><b>Every change is recorded</b> in each job's History, with the name and time.</p>`}
+ ]
+};
+function renderGuide(m){
+  const role = S.me.role;
+  const secs = GUIDE[LANG] || GUIDE.en;
+  m.innerHTML = `
+   <div class="toolbar no-print"><button class="btn ghost" id="gBack">‹ ${t("more")}</button><h2 class="pg grow" style="margin:0">${t("guide")}</h2>
+     <button class="btn ghost desk-only" id="gAll">${t("expandAll")}</button><button class="btn desk-only" id="gPrint">${t("print")}</button></div>
+   <h2 class="print-only">${t("appName")} · ${t("guide")}</h2>
+   <div class="muted small no-print" style="margin-bottom:10px">${t("guideIntro")} <b>${t(role)}</b>.</div>
+   ${secs.map(s=>{ const mine = s.roles.includes(role) && s.roles[0]!=="all" || ["start"].includes(s.id);
+     return `<details class="card guide" ${mine?"open":""}><summary>${esc(s.h)}${s.roles[0]!=="all"?` <span class="badge ${s.roles.includes(role)?"s-TRANSFERRED":"s-PLANNING"}">${s.roles.filter(r=>r!=="admin").map(r=>t(r)).join(", ")||t("admin")}</span>`:""}</summary><div class="gbody">${s.b}</div></details>`; }).join("")}
+   <div class="muted small" style="text-align:center;margin:18px 0">GFB Food Sdn Bhd · ${t("appName")}</div>`;
+  $("#gBack").onclick = () => { S.tab="more"; render(); };
+  $("#gAll").onclick = () => { const d=[...m.querySelectorAll("details")]; const open=!d.every(x=>x.open); d.forEach(x=>x.open=open); };
+  $("#gPrint").onclick = () => { m.querySelectorAll("details").forEach(x=>x.open=true); window.print(); };
+}
+
 // ======================= MORE =======================
 async function renderMore(m){
   const isA = can("admin");
@@ -1033,6 +1234,7 @@ async function renderMore(m){
      <div class="muted small">@${esc(S.me.username)} · ${t(S.me.role)}</div></div>
    <div class="card" style="margin-bottom:10px">
      <div class="listitem"><span class="grow">${t("language")}</span><div class="seg"><button data-l="ms" class="${LANG==="ms"?"on":""}">Bahasa Malaysia</button><button data-l="en" class="${LANG==="en"?"on":""}">English</button></div></div>
+     <div class="listitem" style="cursor:pointer" id="guideL"><span class="grow">📘 ${t("guide")}</span><span class="muted">›</span></div>
      <div class="listitem" style="cursor:pointer" id="csv"><span class="grow">${t("exportCsv")}</span><span class="muted">›</span></div>
      <div class="listitem" style="cursor:pointer" id="cpw"><span class="grow">${t("changePw")}</span><span class="muted">›</span></div>
      <div class="listitem" style="cursor:pointer;color:var(--bad)" id="lo"><span class="grow">${t("logout")}</span></div>
@@ -1051,6 +1253,7 @@ async function renderMore(m){
   m.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{LANG=b.dataset.l;store.set("gfbp_lang",LANG);render();});
   $("#lo").onclick = async () => { await sb.auth.signOut({scope:"local"}); };
   $("#csv").onclick = exportCsv;
+  $("#guideL").onclick = () => { S.tab = "guide"; render(); window.scrollTo(0,0); };
   $("#cpw").onclick = () => formSheet(t("changePw"), [{k:"p",label:t("newPw")+" ("+t("pwMin")+")",type:"password",req:true}], async v => {
     if(v.p.length<8) throw new Error(t("pwMin"));
     const { error } = await sb.auth.updateUser({ password: v.p }); if(error) throw error; closeSheet(); toast(t("saved"));
