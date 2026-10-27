@@ -499,17 +499,21 @@ function renderLogin(msg){
       <div class="seg"><button data-l="ms" class="${LANG==="ms"?"on":""}">BM</button><button data-l="en" class="${LANG==="en"?"on":""}">EN</button></div>
     </div>
     <form id="lf" style="margin-top:14px">
-      <label class="f">${t("username")}</label><input type="text" id="lu" autocomplete="username" autocapitalize="none" required>
-      <label class="f">${t("password")}</label><input type="password" id="lp" autocomplete="current-password" required>
+      <label class="f">${t("username")}</label><input type="text" id="lu" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+      <label class="f">${t("password")}</label>
+      <div style="position:relative"><input type="password" id="lp" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" required style="padding-right:48px">
+        <button type="button" id="lpEye" aria-label="show password" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;font-size:18px;cursor:pointer;padding:8px">👁</button></div>
       ${msg?`<div class="errbox">${esc(msg)}</div>`:""}
       <button class="btn primary block" style="margin-top:16px" id="lb">${t("signIn")}</button>
     </form>
   </div></div>`;
   document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{LANG=b.dataset.l;store.set("gfbp_lang",LANG);renderLogin(msg)});
+  $("#lpEye").onclick = () => { const i=$("#lp"); i.type = i.type==="password" ? "text" : "password"; $("#lpEye").style.opacity = i.type==="text" ? "1" : ".6"; };
+  $("#lpEye").style.opacity = ".6";
   $("#lf").onsubmit = async e => {
     e.preventDefault(); $("#lb").disabled=true;
     const u = $("#lu").value.trim().toLowerCase();
-    const { error } = await sb.auth.signInWithPassword({ email: u + EMAIL_DOMAIN, password: $("#lp").value });
+    const { error } = await sb.auth.signInWithPassword({ email: u.replace(/\s+/g,"") + EMAIL_DOMAIN, password: $("#lp").value.replace(/^\s+|\s+$/g,"") });
     if(error){ renderLogin(t("badLogin")); return; }
     boot();
   };
@@ -1578,7 +1582,7 @@ async function renderMore(m){
   $("#guideL").onclick = () => { S.tab = "guide"; render(); window.scrollTo(0,0); };
   $("#cpw").onclick = () => formSheet(t("changePw"), [{k:"p",label:t("newPw")+" ("+t("pwMin")+")",type:"password",req:true}], async v => {
     if(v.p.length<8) throw new Error(t("pwMin"));
-    const { error } = await sb.auth.updateUser({ password: v.p }); if(error) throw error; closeSheet(); toast(t("saved"));
+    const { error } = await sb.auth.updateUser({ password: v.p.trim() }); if(error) throw error; closeSheet(); toast(t("saved"));
   });
   if(!isA) return;
   m.querySelectorAll("[data-pr]").forEach(cb => cb.onchange = async () => {
@@ -1600,7 +1604,7 @@ async function renderMore(m){
       {k:"r",label:t("role"),type:"select",v:"supervisor",opts:["planner","supervisor","operation","viewer","admin"].map(r=>[r,t(r)])},
       {k:"p",label:t("password")+" ("+t("pwMin")+")",type:"text",req:true}
     ], async v => {
-      const { error } = await sb.rpc("admin_create_user", { p_username:v.u, p_full_name:v.n, p_role:v.r, p_password:v.p });
+      const { error } = await sb.rpc("admin_create_user", { p_username:v.u.trim(), p_full_name:v.n, p_role:v.r, p_password:v.p.trim() });
       if(error) throw error; closeSheet(); toast(t("saved")); loadUsers();
     });
     const f = $("#fs"); const h = document.createElement("div"); h.className="muted small"; h.style.marginTop="8px"; h.textContent=t("userHelp"); f.insertBefore(h, $("#ferr"));
@@ -1628,7 +1632,7 @@ function editUser(u){
     if(nu !== u.username){ const r0 = await sb.rpc("admin_set_username", { p_user:u.user_id, p_username:nu }); if(r0.error) throw r0.error; }
     const { error } = await sb.from("app_users").update({ full_name:v.n.trim(), role:v.r, active:v.a==="true" }).eq("user_id", u.user_id);
     if(error) throw error;
-    if(v.p){ const r = await sb.rpc("admin_reset_password", { p_user:u.user_id, p_password:v.p }); if(r.error) throw r.error; }
+    if(v.p){ const r = await sb.rpc("admin_reset_password", { p_user:u.user_id, p_password:v.p.trim() }); if(r.error) throw r.error; }
     closeSheet(); toast(t("saved")); loadUsers();
   });
 }
