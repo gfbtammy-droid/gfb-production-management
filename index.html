@@ -272,6 +272,8 @@ const T = {
   showing:"Menunjukkan", of:"daripada", moreBtn:"Tunjuk lagi", userHelp:"Pengguna log masuk dengan nama pengguna dan kata laluan ini. Satu akaun boleh digunakan di beberapa peranti serentak.",
   roleHelp:"Apa yang setiap peranan boleh buat ditetapkan di Tetapan Akses di bawah.",
   joAdd:"＋ Tambah JOB", joFill:"Isi berturutan dari JOB pertama", joDup:"Nombor JOB berulang ditanda merah.", joCount:"bilangan",
+  accessLog:"Log Akses", lastSeen:"Terakhir aktif", never:"belum pernah", from:"Dari", to:"Hingga", event:"Aktiviti", device:"Peranti", records:"rekod",
+  EV_LOGIN:"Log masuk", EV_OPEN:"Buka aplikasi", EV_LOGOUT:"Log keluar", EV_LOGIN_FAILED:"Gagal log masuk",
   balShort:"Baki", balPending:"Baki belum dibungkus", afterPacking:"dikira selepas pembungkusan selesai", actPackBal:"Rekod baki pembungkusan",
   alreadyPacked:"Sudah dibungkus", thisRun:"Kuantiti larian ini", newTotal:"Jumlah baru", packComplete:"Pembungkusan selesai (tiada baki lagi)",
   packCompleteHelp:"Kosongkan tanda jika masih ada baki untuk dibungkus di bawah JOB Pembungkusan yang sama. Pembaziran hanya dikira selepas selesai.",
@@ -336,6 +338,8 @@ const T = {
   showing:"Showing", of:"of", moreBtn:"Show more", userHelp:"Users sign in with this username and password. One account can be used on several devices at the same time.",
   roleHelp:"What each role can do is set under Access Settings below.",
   joAdd:"＋ Add JOB", joFill:"Fill in sequence from first JOB", joDup:"Duplicate JOB numbers are marked red.", joCount:"count",
+  accessLog:"Access Log", lastSeen:"Last active", never:"never", from:"From", to:"To", event:"Activity", device:"Device", records:"records",
+  EV_LOGIN:"Signed in", EV_OPEN:"Opened app", EV_LOGOUT:"Signed out", EV_LOGIN_FAILED:"Failed sign-in",
   balShort:"Bal.", balPending:"Balance pending", afterPacking:"calculated once packing is complete", actPackBal:"Record packing balance",
   alreadyPacked:"Already packed", thisRun:"This run quantity", newTotal:"New total", packComplete:"Packing complete (no balance left)",
   packCompleteHelp:"Untick if there is still a balance to pack under the same JOB Packing. Wastage is only calculated once complete.",
@@ -484,6 +488,15 @@ async function updateJob(id, patch){
 }
 
 // ======================= AUTH =======================
+function deviceInfo(){
+  const ua = navigator.userAgent || "";
+  const kind = /iPad|Tablet/i.test(ua) ? "Tablet" : /Mobi|Android|iPhone/i.test(ua) ? "Phone" : "PC";
+  const os = /Windows/i.test(ua) ? "Windows" : /iPhone|iPad|iOS/i.test(ua) ? "iOS" : /Android/i.test(ua) ? "Android" : /Mac OS/i.test(ua) ? "Mac" : /Linux/i.test(ua) ? "Linux" : "";
+  const br = /Edg\//.test(ua) ? "Edge" : /SamsungBrowser/.test(ua) ? "Samsung" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "";
+  return [kind, os, br].filter(Boolean).join(" · ");
+}
+function logAccess(ev, username){ try { sb.rpc("log_access", { p_event: ev, p_username: username||null, p_device: deviceInfo(), p_ua: (navigator.userAgent||"").slice(0,300) }).then(()=>{}, ()=>{}); } catch(e){} }
+let justLoggedIn = false;
 async function boot(){
   const { data:{ session } } = await sb.auth.getSession();
   if(!session){ renderLogin(); return; }
@@ -491,6 +504,7 @@ async function boot(){
   const { data:me } = await sb.from("app_users").select("*").eq("user_id", S.user.id).maybeSingle();
   if(!me || !me.active){ await sb.auth.signOut(); renderLogin(t("noAccess")); return; }
   S.me = me;
+  logAccess(justLoggedIn ? "LOGIN" : "OPEN"); justLoggedIn = false;
   $("#app").innerHTML = `<div class="empty">${t("loading")}</div>`;
   try { await loadAll(); } catch(e){ toast(errMsg(e), true); }
   subscribe();
@@ -522,8 +536,8 @@ function renderLogin(msg){
     e.preventDefault(); $("#lb").disabled=true;
     const u = $("#lu").value.trim().toLowerCase();
     const { error } = await sb.auth.signInWithPassword({ email: u.replace(/\s+/g,"") + EMAIL_DOMAIN, password: $("#lp").value.replace(/^\s+|\s+$/g,"") });
-    if(error){ renderLogin(t("badLogin")); return; }
-    boot();
+    if(error){ logAccess("LOGIN_FAILED", u); renderLogin(t("badLogin")); return; }
+    justLoggedIn = true; boot();
   };
 }
 
@@ -1570,7 +1584,7 @@ async function renderMore(m){
    <div class="card">${S.machines.map(mc=>`<div class="listitem"><span class="grow">${esc(mc.name)}</span><label class="check" style="margin:0"><input type="checkbox" data-mid="${mc.id}" ${mc.active?"checked":""}> ${t("activeUser")}</label></div>`).join("")}</div>`:""}
    <div class="muted small" style="text-align:center;margin:20px 0">GFB Food Sdn Bhd · ${t("appName")} v1.0</div>`;
   m.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{LANG=b.dataset.l;store.set("gfbp_lang",LANG);render();});
-  $("#lo").onclick = async () => { await sb.auth.signOut({scope:"local"}); };
+  $("#lo").onclick = async () => { try { await sb.rpc("log_access", { p_event:"LOGOUT", p_username:null, p_device:deviceInfo(), p_ua:(navigator.userAgent||"").slice(0,300) }); } catch(e){} await sb.auth.signOut({scope:"local"}); };
   $("#csv").onclick = exportCsv;
   $("#guideL").onclick = () => { S.tab = "guide"; render(); window.scrollTo(0,0); };
   $("#cpw").onclick = () => formSheet(t("changePw"), [{k:"p",label:t("newPw")+" ("+t("pwMin")+")",type:"password",req:true}], async v => {
@@ -1605,13 +1619,54 @@ async function renderMore(m){
   loadUsers();
 }
 async function loadUsers(){
-  const { data, error } = await sb.from("app_users").select("*").order("full_name");
+  const [{ data, error }, act] = await Promise.all([ sb.from("app_users").select("*").order("full_name"), sb.rpc("admin_user_activity") ]);
+  const last = {}; (act.data||[]).forEach(a=>{ last[a.user_id] = a.last_seen || a.last_sign_in_at; });
   const el = $("#ulist"); if(!el) return;
   if(error){ el.innerHTML = `<div class="listitem errbox">${esc(errMsg(error))}</div>`; return; }
   S.users = data;
   el.innerHTML = data.map(u=>`<div class="listitem" style="cursor:pointer" data-uid="${u.user_id}">
-    <div class="grow"><div style="font-weight:600">${esc(u.full_name)} ${u.active?"":`<span class="badge s-CANCELLED">OFF</span>`}</div><div class="muted small">@${esc(u.username)} · ${t(u.role)}</div></div><span class="muted">›</span></div>`).join("");
+    <div class="grow"><div style="font-weight:600">${esc(u.full_name)} ${u.active?"":`<span class="badge s-CANCELLED">OFF</span>`}</div><div class="muted small">@${esc(u.username)} · ${t(u.role)} · ${t("lastSeen")}: ${last[u.user_id]?fdt(last[u.user_id]):t("never")}</div></div><span class="muted">›</span></div>`).join("")
+    + `<div class="listitem" style="cursor:pointer;color:var(--brand);font-weight:600" id="accLog">🕒 ${t("accessLog")}<span class="grow"></span><span class="muted">›</span></div>`;
+  $("#accLog").onclick = openAccessLog;
   el.querySelectorAll("[data-uid]").forEach(r=>r.onclick=()=>editUser(S.users.find(u=>u.user_id===r.dataset.uid)));
+}
+async function openAccessLog(){
+  const st = { from: addDays(today(), -6), to: today(), user: "", ev: "" };
+  const users = S.users || [];
+  const bg = sheet(t("accessLog"), `
+    <div class="grid2">
+      <div><label class="f">${t("from")}</label><input type="date" id="al_from" value="${st.from}"></div>
+      <div><label class="f">${t("to")}</label><input type="date" id="al_to" value="${st.to}"></div>
+    </div>
+    <div class="grid2">
+      <div><label class="f">${t("username")}</label><select id="al_user"><option value="">${t("all")}</option>${users.map(u=>`<option value="${esc(u.username)}">${esc(u.full_name)} (@${esc(u.username)})</option>`).join("")}</select></div>
+      <div><label class="f">${t("event")}</label><select id="al_ev"><option value="">${t("all")}</option>${["LOGIN","OPEN","LOGOUT","LOGIN_FAILED"].map(e=>`<option value="${e}">${t("EV_"+e)}</option>`).join("")}</select></div>
+    </div>
+    <div class="row" style="margin-top:10px"><span class="muted small grow" id="al_n"></span><button class="btn ghost" id="al_csv">${t("exportCsv")}</button></div>
+    <div id="al_list" style="margin-top:8px"><div class="muted">${t("loading")}</div></div>`, "data-wide");
+  let rows = [];
+  const evBadge = e => `<span class="badge ${e==="LOGIN_FAILED"?"flag":e==="LOGIN"?"s-CLOSED":e==="LOGOUT"?"s-PLANNING":"s-RELEASED"}">${t("EV_"+e)}</span>`;
+  const load = async () => {
+    const f = $("#al_from").value || st.from, to = $("#al_to").value || st.to;
+    let q = sb.from("access_log").select("*").gte("at", new Date(f+"T00:00:00+08:00").toISOString()).lt("at", new Date(addDays(to,1)+"T00:00:00+08:00").toISOString()).order("at",{ascending:false}).limit(2000);
+    if($("#al_user").value) q = q.eq("username", $("#al_user").value);
+    if($("#al_ev").value) q = q.eq("event", $("#al_ev").value);
+    const { data, error } = await q;
+    if(error){ $("#al_list").innerHTML = `<div class="errbox">${esc(errMsg(error))}</div>`; return; }
+    rows = data || [];
+    $("#al_n").textContent = `${rows.length} ${t("records")}`;
+    $("#al_list").innerHTML = rows.length ? `<div class="scroll-x"><table class="t"><tr><th>${t("date")}</th><th>${t("username")}</th><th>${t("event")}</th><th>${t("device")}</th><th class="hide-m">IP</th></tr>
+      ${rows.map(r=>`<tr><td style="white-space:nowrap">${fdt(r.at)}</td><td>@${esc(r.username||"-")}</td><td>${evBadge(r.event)}</td><td>${esc(r.device||"-")}</td><td class="hide-m">${esc(r.ip||"-")}</td></tr>`).join("")}</table></div>`
+      : `<div class="muted">${t("noData")}</div>`;
+  };
+  ["#al_from","#al_to","#al_user","#al_ev"].forEach(s=>$(s).onchange=load);
+  $("#al_csv").onclick = () => {
+    const cols=["at","username","event","device","ip","user_agent"];
+    const body = rows.map(r=>cols.map(c=>{ let v = c==="at"?fdt(r.at):(c==="event"?t("EV_"+r.event):(r[c]??"")); v=String(v); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; }).join(",")).join("\n");
+    const blob = new Blob(["\ufeff"+cols.join(",")+"\n"+body], {type:"text/csv;charset=utf-8"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`GFB_Access_Log_${today()}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  };
+  load();
 }
 function editUser(u){
   formSheet(`${esc(u.full_name)} · @${esc(u.username)}`, [
