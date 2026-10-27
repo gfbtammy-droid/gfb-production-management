@@ -272,6 +272,7 @@ const T = {
   showing:"Menunjukkan", of:"daripada", moreBtn:"Tunjuk lagi", userHelp:"Pengguna log masuk dengan nama pengguna dan kata laluan ini. Satu akaun boleh digunakan di beberapa peranti serentak.",
   roleHelp:"Apa yang setiap peranan boleh buat ditetapkan di Tetapan Akses di bawah.",
   joAdd:"＋ Tambah JOB", joFill:"Isi berturutan dari JOB pertama", joDup:"Nombor JOB berulang ditanda merah.", joCount:"bilangan",
+  usernameLogin:"Nama pengguna (untuk log masuk) - a-z, 0-9, . _ -", fullNameDisp:"Nama penuh (paparan sahaja, bukan untuk log masuk)",
   daily:"Harian", monthly:"Bulanan", mixedKg:"Dicampur", doneJobs:"Job siap", releasedDay:"Dilepas", transferredDay:"Dipindah", lossesDay:"Kerugian dilapor",
   trend14:"Trend 14 hari", dailyMonth:"Output harian", doneToday:"Job siap pada hari ini", packedToday:"Output dibungkus pada hari ini", plannedToday:"Job dirancang untuk hari ini",
   batchesN:"kelompok", jobsN:"job", todayBtn:"Hari ini", clickDay:"Klik hari untuk butiran",
@@ -332,6 +333,7 @@ const T = {
   showing:"Showing", of:"of", moreBtn:"Show more", userHelp:"Users sign in with this username and password. One account can be used on several devices at the same time.",
   roleHelp:"What each role can do is set under Access Settings below.",
   joAdd:"＋ Add JOB", joFill:"Fill in sequence from first JOB", joDup:"Duplicate JOB numbers are marked red.", joCount:"count",
+  usernameLogin:"Username (for sign in) - a-z, 0-9, . _ -", fullNameDisp:"Full name (display only, not for sign in)",
   daily:"Daily", monthly:"Monthly", mixedKg:"Mixed", doneJobs:"Jobs done", releasedDay:"Released", transferredDay:"Transferred", lossesDay:"Losses reported",
   trend14:"14-day trend", dailyMonth:"Daily output", doneToday:"Jobs done on this day", packedToday:"Output packed on this day", plannedToday:"Jobs planned for this day",
   batchesN:"batches", jobsN:"jobs", todayBtn:"Today", clickDay:"Click a day for details",
@@ -1593,8 +1595,8 @@ async function renderMore(m){
   m.querySelectorAll("[data-mid]").forEach(c=>c.onchange=async()=>{ const { error } = await sb.from("machines").update({active:c.checked}).eq("id",Number(c.dataset.mid)); if(error) toast(errMsg(error),true); else { S.machines.find(x=>x.id===Number(c.dataset.mid)).active=c.checked; toast(t("saved")); } });
   $("#addU").onclick = () => {
     formSheet(t("addUser"), [
-      {k:"n",label:t("fullName"),req:true},
-      {k:"u",label:t("username")+" (a-z, 0-9)",req:true},
+      {k:"u",label:t("usernameLogin"),req:true},
+      {k:"n",label:t("fullNameDisp"),req:true},
       {k:"r",label:t("role"),type:"select",v:"supervisor",opts:["planner","supervisor","operation","viewer","admin"].map(r=>[r,t(r)])},
       {k:"p",label:t("password")+" ("+t("pwMin")+")",type:"text",req:true}
     ], async v => {
@@ -1616,11 +1618,14 @@ async function loadUsers(){
 }
 function editUser(u){
   formSheet(`${esc(u.full_name)} · @${esc(u.username)}`, [
-    {k:"n",label:t("fullName"),v:u.full_name,req:true},
+    {k:"u",label:t("usernameLogin"),v:u.username,req:true},
+    {k:"n",label:t("fullNameDisp"),v:u.full_name,req:true},
     {k:"r",label:t("role"),type:"select",v:u.role,opts:["admin","planner","supervisor","operation","viewer"].map(r=>[r,t(r)])},
     {k:"a",label:t("activeUser"),type:"select",v:String(u.active),opts:[["true","✓ "+t("activeUser")],["false","✗ OFF"]]},
     {k:"p",label:t("resetPw")+" ("+t("pwMin")+")",type:"text",v:""}
   ], async v => {
+    const nu = v.u.trim().toLowerCase();
+    if(nu !== u.username){ const r0 = await sb.rpc("admin_set_username", { p_user:u.user_id, p_username:nu }); if(r0.error) throw r0.error; }
     const { error } = await sb.from("app_users").update({ full_name:v.n.trim(), role:v.r, active:v.a==="true" }).eq("user_id", u.user_id);
     if(error) throw error;
     if(v.p){ const r = await sb.rpc("admin_reset_password", { p_user:u.user_id, p_password:v.p }); if(r.error) throw r.error; }
