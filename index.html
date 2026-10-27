@@ -272,6 +272,9 @@ const T = {
   showing:"Menunjukkan", of:"daripada", moreBtn:"Tunjuk lagi", userHelp:"Pengguna log masuk dengan nama pengguna dan kata laluan ini. Satu akaun boleh digunakan di beberapa peranti serentak.",
   roleHelp:"Apa yang setiap peranan boleh buat ditetapkan di Tetapan Akses di bawah.",
   joAdd:"＋ Tambah JOB", joFill:"Isi berturutan dari JOB pertama", joDup:"Nombor JOB berulang ditanda merah.", joCount:"bilangan",
+  balShort:"Baki", balPending:"Baki belum dibungkus", afterPacking:"dikira selepas pembungkusan selesai", actPackBal:"Rekod baki pembungkusan",
+  alreadyPacked:"Sudah dibungkus", thisRun:"Kuantiti larian ini", newTotal:"Jumlah baru", packComplete:"Pembungkusan selesai (tiada baki lagi)",
+  packCompleteHelp:"Kosongkan tanda jika masih ada baki untuk dibungkus di bawah JOB Pembungkusan yang sama. Pembaziran hanya dikira selepas selesai.",
   usernameLogin:"Nama pengguna (untuk log masuk) - a-z, 0-9, . _ -", fullNameDisp:"Nama penuh (paparan sahaja, bukan untuk log masuk)",
   daily:"Harian", monthly:"Bulanan", mixedKg:"Dicampur", doneJobs:"Job siap", releasedDay:"Dilepas", transferredDay:"Dipindah", lossesDay:"Kerugian dilapor",
   trend14:"Trend 14 hari", dailyMonth:"Output harian", doneToday:"Job siap pada hari ini", packedToday:"Output dibungkus pada hari ini", plannedToday:"Job dirancang untuk hari ini",
@@ -333,6 +336,9 @@ const T = {
   showing:"Showing", of:"of", moreBtn:"Show more", userHelp:"Users sign in with this username and password. One account can be used on several devices at the same time.",
   roleHelp:"What each role can do is set under Access Settings below.",
   joAdd:"＋ Add JOB", joFill:"Fill in sequence from first JOB", joDup:"Duplicate JOB numbers are marked red.", joCount:"count",
+  balShort:"Bal.", balPending:"Balance pending", afterPacking:"calculated once packing is complete", actPackBal:"Record packing balance",
+  alreadyPacked:"Already packed", thisRun:"This run quantity", newTotal:"New total", packComplete:"Packing complete (no balance left)",
+  packCompleteHelp:"Untick if there is still a balance to pack under the same JOB Packing. Wastage is only calculated once complete.",
   usernameLogin:"Username (for sign in) - a-z, 0-9, . _ -", fullNameDisp:"Full name (display only, not for sign in)",
   daily:"Daily", monthly:"Monthly", mixedKg:"Mixed", doneJobs:"Jobs done", releasedDay:"Released", transferredDay:"Transferred", lossesDay:"Losses reported",
   trend14:"14-day trend", dailyMonth:"Daily output", doneToday:"Jobs done on this day", packedToday:"Output packed on this day", plannedToday:"Jobs planned for this day",
@@ -388,11 +394,13 @@ const today = () => new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kuala_
 const ym = d => d ? d.slice(0,7) : null;
 const sClass = s => "s-" + s.replace(" ","_");
 const badge = s => `<span class="badge ${sClass(s)}">${esc(t(s))}</span>`;
-const varPct = j => (j.mixing_output>0 && j.packing_output!=null) ? (j.mixing_output - j.packing_output)/j.mixing_output : null;
+const packPending = j => j.packing_complete===false && !["CANCELLED"].includes(j.status);
+const packBal = j => packPending(j) && j.mixing_output!=null ? Math.max(Number(j.mixing_output)-Number(j.packing_output||0),0) : null;
+const varPct = j => (j.mixing_output>0 && j.packing_output!=null && !packPending(j)) ? (j.mixing_output - j.packing_output)/j.mixing_output : null;
 const outputOf = j => j.packing_output!=null ? Number(j.packing_output) : (j.bulk_packing && j.mixing_output!=null ? Number(j.mixing_output) : null);
 const outputDate = j => j.packing_output!=null ? j.date_packing : (j.bulk_packing ? j.date_mixing : null);
 const jobLoss = id => S.losses.filter(l=>l.job_id===id && ["MIXING","PACKING"].includes(l.stage)).reduce((a,l)=>a+Number(l.qty_kg),0);
-const unexplainedKg = j => { if(!(j.mixing_output>0) || j.packing_output==null) return null; const v=j.mixing_output-j.packing_output; return v>0 ? Math.max(v - jobLoss(j.id), 0) : v; };
+const unexplainedKg = j => { if(!(j.mixing_output>0) || j.packing_output==null || packPending(j)) return null; const v=j.mixing_output-j.packing_output; return v>0 ? Math.max(v - jobLoss(j.id), 0) : v; };
 const uPct = j => { const u=unexplainedKg(j); return u==null?null:u/j.mixing_output; };
 const overTarget = j => { const u=unexplainedKg(j); return u!=null && Math.abs(u)/j.mixing_output*100 > S.target; };
 const batchesOf = id => S.batches.filter(b=>b.job_id===id).sort((a,b)=>a.seq-b.seq);
@@ -623,7 +631,7 @@ function jobTable(rows){
       <td>${esc(jo(j.jo_mix))}${(j.jo_pack||[]).length?`<div class="muted small">P: ${esc(j.jo_pack.map(JO).join(", "))}</div>`:""}</td>
       <td class="n">${j.mixing_output!=null?nf(j.mixing_output, j.mixing_output%1?2:0):"-"}</td>
       <td class="n">${j.packing_output!=null?(j.pack_uom&&j.pack_uom!=="KG"&&j.pack_qty!=null?`${nf(j.pack_qty, j.pack_qty%1?2:0)} ${UOM_SHORT[j.pack_uom]}<div class="muted small">${nf(j.packing_output, j.packing_output%1?2:0)} KG</div>`:nf(j.packing_output, j.packing_output%1?2:0)):(j.bulk_packing?'<span class="muted small">BULK</span>':"-")}</td>
-      <td class="n ${ov&&!j.wastage_cause?"bad-t":""}">${v!=null?pct(v,2):"-"}${ov&&!j.wastage_cause?" !":""}</td>
+      <td class="n ${ov&&!j.wastage_cause?"bad-t":""}">${packPending(j)?`<span class="badge s-IN_PROCESS">${t("balShort")} ${nf(packBal(j))}</span>`:(v!=null?pct(v,2):"-")}${ov&&!j.wastage_cause?" !":""}</td>
       </tr>`; }).join("")}
   </tbody></table></div>`;
 }
@@ -636,6 +644,7 @@ function jobCard(j){
     <div class="meta"><span>${t("s_plan")} <b>${fds(j.plan_date)}</b></span><span>${t("s_rel")} <b>${j.date_released?fds(j.date_released):"-"}</b></span><span>${t("s_done")} <b>${j.date_done?fds(j.date_done):"-"}</b></span></div>
     <div class="meta"><span>${esc(j.customer||"-")}</span><span>${esc(j.machine)}</span><span>${nf(j.batch_qty, j.batch_qty%1?2:0)} × ${j.batches} = <b>${kg(j.total_planned)}</b></span></div>
     ${st>=0?`<div class="steps">${[0,1,2,3,4,5].map(i=>`<i class="${i<=st?"on":""}"></i>`).join("")}</div>`:""}
+    ${packPending(j)?`<div class="meta" style="margin-top:4px"><span class="badge s-IN_PROCESS">${t("balPending")}: ${kg(packBal(j))}</span></div>`:""}
     ${v!=null?`<div class="meta" style="margin-top:4px"><span>${t("variance")}: <b>${kg(j.variance_kg)}</b> (${pct(v,2)})</span>${flag?`<span class="badge flag">${t("needCause")}</span>`:""}</div>`:""}
   </button>`;
 }
@@ -661,13 +670,13 @@ async function openJob(id, keepScroll){
   if(P("job_release") && st==="PLANNING") acts.push(["release",t("actRelease"),"primary"]);
   if(P("job_start") && st==="RELEASED") acts.push(["start",t("actStart"),"primary"]);
   if(P("job_output") && ["IN PROCESS","DONE"].includes(st)) acts.push(["mix",t("actMix"),""]);
-  if(P("job_output") && ["IN PROCESS","DONE"].includes(st)) acts.push(["pack",j.bulk_packing?t("actFG"):t("actPack"),""]);
+  if(P("job_output") && (["IN PROCESS","DONE"].includes(st) || (st==="TRANSFERRED" && packPending(j)))) acts.push(["pack",packPending(j)?t("actPackBal"):(j.bulk_packing?t("actFG"):t("actPack")), packPending(j)?"primary":""]);
   if(P("job_done") && st==="IN PROCESS") acts.push(["done",t("actDone"),"primary"]);
   if(P("job_qc") && ["IN PROCESS","DONE","TRANSFERRED"].includes(st)) acts.push(["qc",t("actQC"),""]);
   if(P("job_transfer") && st==="DONE") acts.push(["transfer",t("actTransfer"),"primary"]);
   if(P("job_wastage") && overTarget(j) && !["CLOSED","CANCELLED"].includes(st)) acts.push(["waste",t("actWaste"), j.wastage_cause?"":"danger"]);
   if(P("job_verify") && overTarget(j) && j.wastage_cause && !j.wastage_verified_by) acts.push(["verify",t("actVerify"),""]);
-  if(P("job_close") && ["DONE","TRANSFERRED"].includes(st)) acts.push(["close",t("actClose"),"primary"]);
+  if(P("job_close") && ["DONE","TRANSFERRED"].includes(st) && !packPending(j)) acts.push(["close",t("actClose"),"primary"]);
   if(P("job_done") && st==="DONE" && !isA) acts.push(["reopen",t("actReopen"),"ghost"]);
   if(isA && ["DONE","TRANSFERRED","CLOSED"].includes(st)) acts.push(["reopen",t("actReopen"),"ghost"]);
   if(P("job_edit_plan") && pre) acts.push(["edit",t("actEdit"),"ghost"]);
@@ -706,7 +715,8 @@ async function openJob(id, keepScroll){
       <dt>${t("c_done")}</dt><dd>${fd(j.date_done)}</dd>
       <dt>${t("mixOut")}</dt><dd>${kg(j.mixing_output)} <span class="muted small">${j.date_mixing?fd(j.date_mixing):""}</span></dd>
       <dt>${t("fgOut")}</dt><dd>${packText(j) ?? (j.bulk_packing?`<span class="muted">${t("bulk").split(" (")[0]}</span>`:"-")} <span class="muted small">${j.date_packing?fd(j.date_packing):""}</span></dd>
-      <dt>${t("variance")}</dt><dd ${overTarget(j)?'style="color:var(--bad)"':""}>${v!=null?`${kg(j.variance_kg)} (${pct(v,2)})`:"-"}</dd>
+      ${packPending(j)?`<dt>${t("balPending")}</dt><dd style="color:var(--warn)">${kg(packBal(j))}</dd>`:""}
+      <dt>${t("variance")}</dt><dd ${overTarget(j)?'style="color:var(--bad)"':""}>${v!=null?`${kg(j.variance_kg)} (${pct(v,2)})`:(packPending(j)?`<span class="muted small">${t("afterPacking")}</span>`:"-")}</dd>
       ${jobLoss(j.id)>0?`<dt>${t("reportedLoss")}</dt><dd>${kg(jobLoss(j.id))}</dd><dt>${t("unexplained")}</dt><dd ${overTarget(j)?'style="color:var(--bad)"':""}>${unexplainedKg(j)!=null?`${kg(unexplainedKg(j))} (${pct(unexplainedKg(j)/j.mixing_output,2)})`:"-"}</dd>`:""}
       <dt>${t("qcResult")}</dt><dd>${j.qc_result?`${esc(j.qc_result)} <span class="muted small">${fd(j.date_qc)}</span>`:"-"}</dd>
       <dt>${t("toReq")}</dt><dd>${esc(j.to_req_no||"-")} <span class="muted small">${j.date_transferred?fd(j.date_transferred):""}</span></dd>
@@ -834,54 +844,36 @@ function batchForm(j, bts){
   };
 }
 function packForm(j, done){
+  const add = j.packing_output!=null && packPending(j);
+  const prevKg = add ? Number(j.packing_output) : 0, prevQty = add ? Number(j.pack_qty||0) : 0;
+  const uom0 = j.pack_uom||"KG";
   const body = `<form id="pf">
-    <label class="f">${t("date")}</label><input type="date" id="p_date" value="${j.date_packing||today()}" required>
+    ${add?`<div class="warnbox">${t("alreadyPacked")}: <b>${packText(j)}</b> · ${t("balPending")}: <b>${kg(packBal(j))}</b></div>`:""}
+    <label class="f">${t("date")}</label><input type="date" id="p_date" value="${add?today():(j.date_packing||today())}" required>
     <div class="grid2">
-      <div><label class="f">${t("uom")}</label><select id="p_uom">${UOMS.map(u=>`<option value="${u}" ${(j.pack_uom||"KG")===u?"selected":""}>${t(u)}</option>`).join("")}</select></div>
-      <div><label class="f">${t("qty")}</label><input type="number" id="p_qty" step="0.01" min="0" inputmode="decimal" value="${j.pack_qty??""}" required></div>
+      <div><label class="f">${t("uom")}</label><select id="p_uom" ${add?"disabled":""}>${UOMS.map(u=>`<option value="${u}" ${uom0===u?"selected":""}>${t(u)}</option>`).join("")}</select></div>
+      <div><label class="f">${add?t("thisRun"):t("qty")}</label><input type="number" id="p_qty" step="0.01" min="0" inputmode="decimal" value="${add?"":(j.pack_qty??"")}" required></div>
     </div>
-    <div id="p_unitw"><label class="f">${t("unitKg")}</label><input type="number" id="p_unit" step="0.0001" min="0.0001" inputmode="decimal" value="${j.pack_unit_kg??""}"></div>
-    <div class="card" style="padding:10px 12px;margin-top:10px"><div class="row" style="justify-content:space-between"><span class="muted">${t("totalKg")}</span><b id="p_tot">-</b></div></div>
+    <div id="p_unitw"><label class="f">${t("unitKg")}</label><input type="number" id="p_unit" step="0.0001" min="0.0001" inputmode="decimal" value="${j.pack_unit_kg??""}" ${add?"readonly":""}></div>
+    <div class="card" style="padding:10px 12px;margin-top:10px"><div class="row" style="justify-content:space-between"><span class="muted">${add?t("newTotal"):t("totalKg")}</span><b id="p_tot">-</b></div></div>
+    <label class="check"><input type="checkbox" id="p_done" checked> ${t("packComplete")}</label>
+    <div class="muted small">${t("packCompleteHelp")}</div>
     <div id="perr"></div>
     <div class="grid2" style="margin-top:14px"><button type="button" class="btn ghost" id="pc">${t("cancel")}</button><button class="btn primary" id="ps">${t("save")}</button></div></form>`;
-  sheet(`${j.bulk_packing?t("actFG"):t("actPack")} · ${esc(j.job_no)}`, body);
-  const calc = () => { const u=$("#p_uom").value, q=Number($("#p_qty").value)||0, w=Number($("#p_unit").value)||0;
+  sheet(`${add?t("actPackBal"):(j.bulk_packing?t("actFG"):t("actPack"))} · ${esc(j.job_no)}`, body);
+  const runKg = () => { const u=$("#p_uom").value, q=Number($("#p_qty").value)||0, w=Number($("#p_unit").value)||0; return u==="KG" ? q : q*w; };
+  const calc = () => { const u=$("#p_uom").value;
     $("#p_unitw").classList.toggle("hidden", u==="KG"); $("#p_unit").required = u!=="KG";
-    const k = u==="KG" ? q : q*w; $("#p_tot").textContent = k ? kg(Math.round(k*100)/100) : "-"; return k; };
+    const k = prevKg + runKg(); $("#p_tot").textContent = k ? kg(Math.round(k*100)/100) : "-"; };
   ["#p_uom","#p_qty","#p_unit"].forEach(s=>{ $(s).oninput=calc; $(s).onchange=calc; }); calc();
   $("#pc").onclick = () => openJob(j.id);
   $("#pf").onsubmit = async e => {
     e.preventDefault(); $("#ps").disabled = true;
     const u=$("#p_uom").value, q=Number($("#p_qty").value), w=u==="KG"?null:Number($("#p_unit").value);
-    try { await done({ date_packing:$("#p_date").value, pack_uom:u, pack_qty:q, pack_unit_kg:w, packing_output: Math.round((u==="KG"?q:q*w)*100)/100 }); }
+    const totKg = Math.round((prevKg + (u==="KG"?q:q*w))*100)/100;
+    try { await done({ date_packing:$("#p_date").value, pack_uom:u, pack_qty: Math.round((prevQty + q)*100)/100, pack_unit_kg:w, packing_output: totKg, packing_complete: $("#p_done").checked }); }
     catch(er){ $("#perr").innerHTML = `<div class="errbox">${esc(errMsg(er))}</div>`; $("#ps").disabled=false; }
   };
-}
-function joEditor(el, initial, countEl, targetN){
-  let list = initial.length ? [...initial] : [""];
-  const markDup = () => { const c={}; list.forEach(v=>{ if(v) c[v]=(c[v]||0)+1; });
-    el.querySelectorAll("input[data-i]").forEach(inp=>{ const v=list[Number(inp.dataset.i)]; inp.closest(".jcell").classList.toggle("dup", !!v && c[v]>1); }); };
-  const draw = () => {
-    const counts = {}; list.forEach(v=>{ if(v) counts[v]=(counts[v]||0)+1; });
-    el.innerHTML = `<div class="jgrid">${list.map((v,i)=>`<div class="jcell ${v&&counts[v]>1?"dup":""}"><span class="n">${i+1}</span><input inputmode="numeric" data-i="${i}" value="${esc(v)}" placeholder="JOB"><button type="button" class="rm" data-rm="${i}" aria-label="remove">×</button></div>`).join("")}</div>
-      <div class="jtools"><button type="button" class="btn ghost" data-add>${t("joAdd")}</button><button type="button" class="btn ghost" data-fill>${t("joFill")}</button></div>`;
-    if(countEl) countEl.textContent = `(${list.filter(Boolean).length})`;
-    el.querySelectorAll("input[data-i]").forEach(inp => {
-      inp.oninput = () => { list[Number(inp.dataset.i)] = inp.value.trim(); if(countEl) countEl.textContent = `(${list.filter(Boolean).length})`; };
-      inp.onchange = markDup;
-      inp.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); const nx = el.querySelector(`input[data-i="${Number(inp.dataset.i)+1}"]`); if(nx) nx.focus(); else { list.push(""); draw(); el.querySelector(`input[data-i="${list.length-1}"]`).focus(); } } };
-    });
-    el.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { list.splice(Number(b.dataset.rm),1); if(!list.length) list=[""]; draw(); });
-    el.querySelector("[data-add]").onclick = () => { list.push(""); draw(); el.querySelector(`input[data-i="${list.length-1}"]`).focus(); };
-    el.querySelector("[data-fill]").onclick = () => {
-      const first = list.find(v=>/^\d+$/.test(v)); if(!first) return;
-      const n = Math.max(targetN()||0, list.length, 1); const start = Number(first);
-      list = Array.from({length:n}, (_,k)=>String(start+k)); draw();
-    };
-  };
-  draw();
-  return { values: () => list.map(v=>v.trim()).filter(Boolean),
-           hasDup: () => { const v = list.map(x=>x.trim()).filter(Boolean); return new Set(v).size !== v.length; } };
 }
 function adminEditForm(j){
   const bts = batchesOf(j.id);
@@ -902,6 +894,7 @@ function adminEditForm(j){
     <div class="grid2">${F("date_packing",t("packing")+" - "+t("date"),"date")}<div><label class="f">${t("uom")}</label><select id="a_pack_uom"><option value=""></option>${UOMS.map(u=>`<option value="${u}" ${j.pack_uom===u?"selected":""}>${t(u)}</option>`).join("")}</select></div></div>
     <div class="grid2">${F("pack_qty",t("qty"),"number")}${F("pack_unit_kg",t("unitKg"),"number")}</div>
     ${F("packing_output",t("packOut")+" (KG)","number")}
+    <label class="check"><input type="checkbox" id="a_pcomp" ${j.packing_complete!==false?"checked":""}> ${t("packComplete")}</label>
     <div class="grid2"><div><label class="f">${t("qcResult")}</label><select id="a_qc_result"><option value=""></option>${["PASS","HOLD","FAIL"].map(x=>`<option ${j.qc_result===x?"selected":""}>${x}</option>`).join("")}</select></div>${F("date_qc","QC - "+t("date"),"date")}</div>
     <div class="grid2">${F("to_req_no",t("toReq"))}${F("date_transferred",t("TRANSFERRED")+" - "+t("date"),"date")}</div>
     <div class="grid2">${F("date_done",t("c_done"),"date")}${F("date_closed",t("CLOSED")+" - "+t("date"),"date")}</div>
@@ -927,7 +920,7 @@ function adminEditForm(j){
       plan_date: dn("plan_date"), batch_qty: num("batch_qty"), batches: parseInt(val("batches")), total_planned: num("total_planned"),
       jo_mix: edMix.values(), jo_pack: edPack.values(), bulk_packing: $("#a_bulk").checked,
       date_released: dn("date_released"), date_mixing: dn("date_mixing"),
-      date_packing: dn("date_packing"), pack_uom: dn("pack_uom"), pack_qty: num("pack_qty"), pack_unit_kg: num("pack_unit_kg"), packing_output: num("packing_output"),
+      date_packing: dn("date_packing"), pack_uom: dn("pack_uom"), pack_qty: num("pack_qty"), pack_unit_kg: num("pack_unit_kg"), packing_output: num("packing_output"), packing_complete: $("#a_pcomp").checked,
       qc_result: dn("qc_result"), date_qc: dn("date_qc"), to_req_no: dn("to_req_no"), date_transferred: dn("date_transferred"), date_done: dn("date_done"), date_closed: dn("date_closed"),
       notes: dn("notes"), remarks: dn("remarks"), wastage_cause: dn("wastage_cause"), wastage_action: dn("wastage_action")
     };
@@ -1033,7 +1026,7 @@ function monthStats(m){
   const planned = plannedJobs.reduce((a,j)=>a+Number(j.total_planned||0),0);
   const outJobs = S.jobs.filter(j=>outputOf(j)!=null && ym(outputDate(j))===m);
   const out = outJobs.reduce((a,j)=>a+outputOf(j),0);
-  const wj = outJobs.filter(j=>j.mixing_output>0 && j.packing_output!=null);
+  const wj = outJobs.filter(j=>j.mixing_output>0 && j.packing_output!=null && !packPending(j));
   const mixSum = wj.reduce((a,j)=>a+Number(j.mixing_output),0);
   const varSum = wj.reduce((a,j)=>a+Number(j.mixing_output-j.packing_output),0);
   return { plannedJobs, planned, outJobs, out, ach: planned? out/planned : null, waste: mixSum? varSum/mixSum : null };
@@ -1053,7 +1046,7 @@ function dayStats(d){
   const mixN = bt.length + legacy.reduce((a,j)=>a+(j.batches||1),0);
   const outJobs = S.jobs.filter(j=>outputOf(j)!=null && outputDate(j)===d);
   const out = outJobs.reduce((a,j)=>a+outputOf(j),0);
-  const wj = outJobs.filter(j=>j.mixing_output>0 && j.packing_output!=null);
+  const wj = outJobs.filter(j=>j.mixing_output>0 && j.packing_output!=null && !packPending(j));
   const ms = wj.reduce((a,j)=>a+Number(j.mixing_output),0), vs = wj.reduce((a,j)=>a+Number(j.mixing_output-j.packing_output),0);
   const losses = S.losses.filter(l=>toMY(l.occurred_at).slice(0,10)===d);
   return { mixed, mixN, out, outJobs,
@@ -1158,7 +1151,7 @@ function renderDash(m){
 function renderWaste(m){
   if(!S.month) S.month = today().slice(0,7);
   const months = monthsAvailable();
-  const inMonth = S.jobs.filter(j=>j.mixing_output>0 && j.packing_output!=null && ym(j.date_packing)===S.month);
+  const inMonth = S.jobs.filter(j=>j.mixing_output>0 && j.packing_output!=null && !packPending(j) && ym(j.date_packing)===S.month);
   const mix = inMonth.reduce((a,j)=>a+Number(j.mixing_output),0), pack = inMonth.reduce((a,j)=>a+Number(j.packing_output),0);
   const over = S.jobs.filter(j=>overTarget(j) && (ym(j.date_packing)===S.month || (!j.wastage_cause && !["CLOSED","CANCELLED"].includes(j.status))))
     .sort((a,b)=>(a.wastage_cause?1:0)-(b.wastage_cause?1:0) || Math.abs(uPct(b))-Math.abs(uPct(a)));
@@ -1638,7 +1631,7 @@ function editUser(u){
 }
 function exportCsv(subset){
   const src = Array.isArray(subset) ? subset : S.jobs;
-  const cols = ["job_no","machine","plan_date","item_code","product","customer","batch_qty","batches","total_planned","jo_mix","jo_pack","bulk_packing","status","date_released","date_mixing","date_done","mixing_output","batch_detail","date_packing","pack_qty","pack_uom","pack_unit_kg","packing_output","variance_kg","date_qc","qc_result","to_req_no","date_transferred","date_closed","notes","remarks","wastage_cause","wastage_action","wastage_verified_by","wastage_verified_date"];
+  const cols = ["job_no","machine","plan_date","item_code","product","customer","batch_qty","batches","total_planned","jo_mix","jo_pack","bulk_packing","status","date_released","date_mixing","date_done","mixing_output","batch_detail","date_packing","pack_qty","pack_uom","pack_unit_kg","packing_output","packing_complete","variance_kg","date_qc","qc_result","to_req_no","date_transferred","date_closed","notes","remarks","wastage_cause","wastage_action","wastage_verified_by","wastage_verified_date"];
   const rows = [...src].sort((a,b)=>a.id-b.id).map(j=>cols.map(c=>{ let v = c==="batch_detail" ? batchesOf(j.id).map(b=>`${b.jo_no}:${b.mix_kg??""}`).join(" ") : c==="jo_mix"||c==="jo_pack" ? (j[c]||[]).map(JO) : j[c]; if(Array.isArray(v)) v=v.join(" "); if(v==null) v=""; v=String(v); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; }).join(","));
   const blob = new Blob(["﻿"+cols.join(",")+"\n"+rows.join("\n")], {type:"text/csv;charset=utf-8"});
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `GFB_Production_${today()}.csv`; a.click();
