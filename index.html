@@ -119,7 +119,16 @@ label.f{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px;font-w
 .trend .p{background:var(--line)}
 .trend .a{background:var(--brand)}
 .trend .m{font-size:11.5px;color:var(--muted)}
-.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}
+.trend{min-width:0}
+.trend .col{min-width:0;overflow:hidden}
+.trend.dense{gap:3px;height:140px}
+@media(max-width:899px){ .hide-m{display:none} .trend.dense{gap:1px} .trend.dense .m{font-size:9px;letter-spacing:-.3px} }
+.trend .daycol{border:0;background:none;padding:0;cursor:pointer;border-radius:6px}
+.trend .daycol:hover{background:var(--brand-soft)}
+.trend .daycol.sel{background:var(--brand-soft);outline:2px solid var(--brand)}
+.trend.dense .m{font-size:10.5px}
+.trend.dense .pair div{width:42%;max-width:14px}
+.legend{flex-wrap:wrap;display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 table.t{width:100%;border-collapse:collapse;font-size:13.5px}
 table.t th{text-align:left;color:var(--muted);font-weight:550;font-size:12px;padding:6px 6px;border-bottom:1px solid var(--line)}
@@ -263,6 +272,9 @@ const T = {
   showing:"Menunjukkan", of:"daripada", moreBtn:"Tunjuk lagi", userHelp:"Pengguna log masuk dengan nama pengguna dan kata laluan ini. Satu akaun boleh digunakan di beberapa peranti serentak.",
   roleHelp:"Apa yang setiap peranan boleh buat ditetapkan di Tetapan Akses di bawah.",
   joAdd:"＋ Tambah JOB", joFill:"Isi berturutan dari JOB pertama", joDup:"Nombor JOB berulang ditanda merah.", joCount:"bilangan",
+  daily:"Harian", monthly:"Bulanan", mixedKg:"Dicampur", doneJobs:"Job siap", releasedDay:"Dilepas", transferredDay:"Dipindah", lossesDay:"Kerugian dilapor",
+  trend14:"Trend 14 hari", dailyMonth:"Output harian", doneToday:"Job siap pada hari ini", packedToday:"Output dibungkus pada hari ini", plannedToday:"Job dirancang untuk hari ini",
+  batchesN:"kelompok", jobsN:"job", todayBtn:"Hari ini", clickDay:"Klik hari untuk butiran",
   access:"Tetapan Akses", task:"Tugas", accessHelp:"Tanda untuk benarkan. Perubahan berkuat kuasa serta-merta; pengguna perlu muat semula halaman untuk melihat butang baru. Admin sentiasa ada akses penuh.",
   T_job_create:"Cipta job", T_job_edit_plan:"Ubah pelan (sebelum pengeluaran)", T_job_edit_product:"Ubah produk (bila-bila masa)", T_job_release:"Lepaskan / kembali ke perancangan",
   T_job_cancel:"Batalkan job", T_job_start:"Mula campuran", T_job_output:"Rekod output campuran & pembungkusan", T_job_done:"Tanda siap / buka semula",
@@ -320,6 +332,9 @@ const T = {
   showing:"Showing", of:"of", moreBtn:"Show more", userHelp:"Users sign in with this username and password. One account can be used on several devices at the same time.",
   roleHelp:"What each role can do is set under Access Settings below.",
   joAdd:"＋ Add JOB", joFill:"Fill in sequence from first JOB", joDup:"Duplicate JOB numbers are marked red.", joCount:"count",
+  daily:"Daily", monthly:"Monthly", mixedKg:"Mixed", doneJobs:"Jobs done", releasedDay:"Released", transferredDay:"Transferred", lossesDay:"Losses reported",
+  trend14:"14-day trend", dailyMonth:"Daily output", doneToday:"Jobs done on this day", packedToday:"Output packed on this day", plannedToday:"Jobs planned for this day",
+  batchesN:"batches", jobsN:"jobs", todayBtn:"Today", clickDay:"Click a day for details",
   access:"Access Settings", task:"Task", accessHelp:"Tick to allow. Changes apply immediately; users need to refresh the page to see new buttons. Admin always has full access.",
   T_job_create:"Create job", T_job_edit_plan:"Edit plan (before production)", T_job_edit_product:"Edit product (any time)", T_job_release:"Release / back to planning",
   T_job_cancel:"Cancel job", T_job_start:"Start mixing", T_job_output:"Record mixing & packing output", T_job_done:"Mark done / reopen",
@@ -350,7 +365,7 @@ let LANG = store.get("gfbp_lang","ms");
 const t = k => (T[LANG][k] ?? T.en[k] ?? k);
 
 // ======================= STATE =======================
-const S = { user:null, me:null, perms:{}, jobs:[], batches:[], losses:[], lossF:"OPEN", machines:[], users:[], target:1.0, tab:"jobs",
+const S = { dashMode: store.get("gfbp_dash","month"), day:null, user:null, me:null, perms:{}, jobs:[], batches:[], losses:[], lossF:"OPEN", machines:[], users:[], target:1.0, tab:"jobs",
   filter:"ACTIVE", q:"", machineF:"", limit:60, month:null, live:true, sortKey:"job_no", sortDir:-1 };
 const STATUSES = ["PLANNING","RELEASED","IN PROCESS","DONE","TRANSFERRED","CLOSED","CANCELLED"];
 const STEP = {"PLANNING":0,"RELEASED":1,"IN PROCESS":2,"DONE":3,"TRANSFERRED":4,"CLOSED":5,"CANCELLED":-1};
@@ -1017,7 +1032,69 @@ function monthStats(m){
   const varSum = wj.reduce((a,j)=>a+Number(j.mixing_output-j.packing_output),0);
   return { plannedJobs, planned, outJobs, out, ach: planned? out/planned : null, waste: mixSum? varSum/mixSum : null };
 }
+const dashToggle = () => `<div class="seg"><button data-dm="day" class="${S.dashMode==="day"?"on":""}">${t("daily")}</button><button data-dm="month" class="${S.dashMode!=="day"?"on":""}">${t("monthly")}</button></div>`;
+function dashWire(m){
+  m.querySelectorAll("[data-dm]").forEach(b=>b.onclick=()=>{ S.dashMode=b.dataset.dm; store.set("gfbp_dash", S.dashMode); if(S.dashMode==="day" && !S.day) S.day=today(); renderDash(m); });
+  m.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>{ S.day=b.dataset.day; S.dashMode="day"; store.set("gfbp_dash","day"); renderDash(m); window.scrollTo(0,0); });
+}
+const addDays = (d,n) => { const x=new Date(d+"T00:00:00Z"); x.setUTCDate(x.getUTCDate()+n); return x.toISOString().slice(0,10); };
+const monthDays = m => { const [y,mm]=m.split("-").map(Number); const n=new Date(Date.UTC(y,mm,0)).getUTCDate(); return Array.from({length:n},(_,i)=>`${m}-${String(i+1).padStart(2,"0")}`); };
+function dayStats(d){
+  const withB = new Set(S.batches.map(b=>b.job_id));
+  const bt = S.batches.filter(b=>b.mix_kg!=null && b.mix_date===d);
+  const legacy = S.jobs.filter(j=>!withB.has(j.id) && j.mixing_output!=null && j.date_mixing===d);
+  const mixed = bt.reduce((a,b)=>a+Number(b.mix_kg),0) + legacy.reduce((a,j)=>a+Number(j.mixing_output),0);
+  const mixN = bt.length + legacy.reduce((a,j)=>a+(j.batches||1),0);
+  const outJobs = S.jobs.filter(j=>outputOf(j)!=null && outputDate(j)===d);
+  const out = outJobs.reduce((a,j)=>a+outputOf(j),0);
+  const wj = outJobs.filter(j=>j.mixing_output>0 && j.packing_output!=null);
+  const ms = wj.reduce((a,j)=>a+Number(j.mixing_output),0), vs = wj.reduce((a,j)=>a+Number(j.mixing_output-j.packing_output),0);
+  const losses = S.losses.filter(l=>toMY(l.occurred_at).slice(0,10)===d);
+  return { mixed, mixN, out, outJobs,
+    done: S.jobs.filter(j=>j.date_done===d), released: S.jobs.filter(j=>j.date_released===d),
+    transferred: S.jobs.filter(j=>j.date_transferred===d), planned: S.jobs.filter(j=>j.plan_date===d && j.status!=="CANCELLED"),
+    waste: ms ? vs/ms : null, losses, lossKg: losses.reduce((a,l)=>a+Number(l.qty_kg),0) };
+}
+function dayBars(days, label){
+  const st = days.map(d=>({d, ...dayStats(d)}));
+  const mx = Math.max(1, ...st.map(x=>Math.max(x.mixed, x.out)));
+  return `<div class="trend dense">${st.map((x,i)=>`<button class="col daycol ${x.d===S.day&&S.dashMode==="day"?"sel":""}" data-day="${x.d}" title="${fd(x.d)}: ${nf(x.mixed)} / ${nf(x.out)} KG">
+    <div class="pair"><div class="p" style="height:${x.mixed/mx*100}%"></div><div class="a" style="height:${x.out/mx*100}%"></div></div><div class="m">${label(x.d, i)}</div></button>`).join("")}</div>`;
+}
+function renderDay(m){
+  if(!S.day) S.day = today();
+  const d = S.day, st = dayStats(d);
+  const dow = new Date(d+"T00:00:00Z").toLocaleDateString(LANG==="ms"?"ms-MY":"en-GB",{weekday:"long",timeZone:"UTC"});
+  const last14 = Array.from({length:14},(_,i)=>addDays(d, i-13));
+  const row = j => { const v=varPct(j); return `<tr data-jid="${j.id}" style="cursor:pointer"><td style="white-space:nowrap"><b>${esc(j.job_no)}</b></td><td>${esc(j.product)}${j.item_code?`<div class="muted small">${esc(j.item_code)}</div>`:""}</td><td class="hide-m">${esc(j.customer||"-")}</td><td class="hide-m">${esc(j.machine)}</td>
+    <td class="n">${j.mixing_output!=null?nf(j.mixing_output, j.mixing_output%1?1:0):"-"}</td><td class="n">${j.packing_output!=null?nf(j.packing_output, j.packing_output%1?1:0):"-"}</td><td class="n ${overTarget(j)?"bad-t":""}">${v!=null?pct(v,2):"-"}</td><td class="hide-m">${badge(j.status)}</td></tr>`; };
+  const tbl = (rows) => rows.length ? `<div class="scroll-x"><table class="t"><tr><th>${t("c_project")}</th><th>${t("product")}</th><th class="hide-m">${t("customer")}</th><th class="hide-m">${t("machine")}</th><th class="n">${t("c_mix")}</th><th class="n">${t("c_pack")}</th><th class="n">${t("c_var")}</th><th class="hide-m">Status</th></tr>${rows.map(row).join("")}</table></div>` : `<div class="muted small">${t("noData")}</div>`;
+  m.innerHTML = `
+   <div class="toolbar"><h2 class="pg grow" style="margin:0">${t("dash")}</h2>${dashToggle()}
+     <button class="btn ghost" id="dPrev" aria-label="prev">‹</button><input type="date" id="dPick" value="${d}" style="width:auto"><button class="btn ghost" id="dNext" aria-label="next">›</button>
+     <button class="btn ghost" id="dToday">${t("todayBtn")}</button></div>
+   <div class="muted" style="margin:-4px 0 10px">${dow}, ${fd(d)}</div>
+   <div class="kpis">
+     <div class="card kpi"><div class="l">${t("mixedKg")}</div><div class="v">${nf(st.mixed, st.mixed%1?1:0)}</div><div class="s">KG · ${st.mixN} ${t("batchesN")}</div></div>
+     <div class="card kpi"><div class="l">${t("packed")}</div><div class="v">${nf(st.out, st.out%1?1:0)}</div><div class="s">KG · ${st.outJobs.length} ${t("jobsN")}</div></div>
+     <div class="card kpi"><div class="l">${t("doneJobs")}</div><div class="v">${st.done.length}</div><div class="s">${t("releasedDay")}: ${st.released.length} · ${t("transferredDay")}: ${st.transferred.length}</div></div>
+     <div class="card kpi"><div class="l">${t("wasteRate")}</div><div class="v" style="${st.waste!=null&&st.waste*100>S.target?"color:var(--bad)":""}">${pct(st.waste,2)}</div><div class="s">${t("lossesDay")}: ${st.losses.length} (${nf(st.lossKg, st.lossKg%1?1:0)} KG)</div></div>
+   </div>
+   <div class="card sec"><h3>${t("trend14")}</h3>
+     ${dayBars(last14, (x,i)=> (i===0 || x.slice(8)==="01") ? `${Number(x.slice(8))}/${Number(x.slice(5,7))}` : String(Number(x.slice(8))))}
+     <div class="legend"><span><i style="background:var(--line)"></i>${t("mixedKg")}</span><span><i style="background:var(--brand)"></i>${t("packed")}</span><span>${t("clickDay")}</span></div>
+   </div>
+   <div class="card sec"><h3>${t("doneToday")} (${st.done.length})</h3>${tbl(st.done)}</div>
+   <div class="card sec"><h3>${t("packedToday")} (${st.outJobs.length})</h3>${tbl(st.outJobs)}</div>
+   <div class="card sec"><h3>${t("plannedToday")} (${st.planned.length})</h3>${tbl(st.planned)}</div>`;
+  const go = nd => { S.day = nd; renderDay(m); };
+  $("#dPrev").onclick = () => go(addDays(d,-1)); $("#dNext").onclick = () => go(addDays(d,1));
+  $("#dToday").onclick = () => go(today()); $("#dPick").onchange = e => { if(e.target.value) go(e.target.value); };
+  m.querySelectorAll("tr[data-jid]").forEach(r=>r.onclick=()=>openJob(Number(r.dataset.jid)));
+  dashWire(m);
+}
 function renderDash(m){
+  if(S.dashMode==="day") return renderDay(m);
   if(!S.month) S.month = today().slice(0,7);
   const months = monthsAvailable();
   const st = monthStats(S.month);
@@ -1035,7 +1112,7 @@ function renderDash(m){
   const maxC = Math.max(1,...topC.map(x=>x[1].kg)), maxP = Math.max(1,...topP.map(x=>x[1].kg));
   const achD = st.ach!=null ? st.ach-1 : null;
   m.innerHTML = `
-   <div class="row" style="margin-bottom:12px"><h2 class="pg grow" style="margin:0">${t("dash")}</h2>
+   <div class="toolbar"><h2 class="pg grow" style="margin:0">${t("dash")}</h2>${dashToggle()}
      <select id="mon" style="width:auto;min-width:140px">${months.map(x=>`<option value="${x}" ${x===S.month?"selected":""}>${monLabel(x)}</option>`).join("")}</select></div>
    <div class="kpis">
      <div class="card kpi"><div class="l">${t("planned")}</div><div class="v">${nf(st.planned)}</div><div class="s">KG · ${st.plannedJobs.length} ${t("jobsInMonth")}</div></div>
@@ -1045,6 +1122,10 @@ function renderDash(m){
    </div>
    <div class="card sec"><h3>${t("liveOps")}</h3>
      <div class="chips" style="flex-wrap:wrap">${STATUSES.filter(s=>s!=="CANCELLED").map(s=>`<button class="chip" data-go="${s}">${badge(s)} <b>${counts[s]||0}</b></button>`).join("")}</div>
+   </div>
+   <div class="card sec"><h3>${t("dailyMonth")} · ${monLabel(S.month)}</h3>
+     ${dayBars(monthDays(S.month), d=>String(Number(d.slice(8))))}
+     <div class="legend"><span><i style="background:var(--line)"></i>${t("mixedKg")}</span><span><i style="background:var(--brand)"></i>${t("packed")}</span><span>${t("clickDay")}</span></div>
    </div>
    <div class="card sec"><h3>${t("trend")}</h3>
      <div class="trend">${tr.map(x=>`<div class="col" title="${monLabel(x.m)}: ${nf(x.planned)} / ${nf(x.out)} KG"><div class="pair"><div class="p" style="height:${x.planned/maxT*100}%"></div><div class="a" style="height:${x.out/maxT*100}%"></div></div><div class="m">${monLabel(x.m).split(" ")[0]}</div></div>`).join("")}</div>
@@ -1064,6 +1145,7 @@ function renderDash(m){
    </div>`;
   $("#mon").onchange = e => { S.month = e.target.value; renderDash(m); };
   m.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{ S.tab="jobs"; S.filter=b.dataset.go; render(); });
+  dashWire(m);
 }
 
 // ======================= WASTAGE =======================
