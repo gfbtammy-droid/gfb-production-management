@@ -889,6 +889,32 @@ function packForm(j, done){
     catch(er){ $("#perr").innerHTML = `<div class="errbox">${esc(errMsg(er))}</div>`; $("#ps").disabled=false; }
   };
 }
+function joEditor(el, initial, countEl, targetN){
+  let list = initial.length ? [...initial] : [""];
+  const markDup = () => { const c={}; list.forEach(v=>{ if(v) c[v]=(c[v]||0)+1; });
+    el.querySelectorAll("input[data-i]").forEach(inp=>{ const v=list[Number(inp.dataset.i)]; inp.closest(".jcell").classList.toggle("dup", !!v && c[v]>1); }); };
+  const draw = () => {
+    const counts = {}; list.forEach(v=>{ if(v) counts[v]=(counts[v]||0)+1; });
+    el.innerHTML = `<div class="jgrid">${list.map((v,i)=>`<div class="jcell ${v&&counts[v]>1?"dup":""}"><span class="n">${i+1}</span><input inputmode="numeric" data-i="${i}" value="${esc(v)}" placeholder="JOB"><button type="button" class="rm" data-rm="${i}" aria-label="remove">×</button></div>`).join("")}</div>
+      <div class="jtools"><button type="button" class="btn ghost" data-add>${t("joAdd")}</button><button type="button" class="btn ghost" data-fill>${t("joFill")}</button></div>`;
+    if(countEl) countEl.textContent = `(${list.filter(Boolean).length})`;
+    el.querySelectorAll("input[data-i]").forEach(inp => {
+      inp.oninput = () => { list[Number(inp.dataset.i)] = inp.value.trim(); if(countEl) countEl.textContent = `(${list.filter(Boolean).length})`; };
+      inp.onchange = markDup;
+      inp.onkeydown = e => { if(e.key==="Enter"){ e.preventDefault(); const nx = el.querySelector(`input[data-i="${Number(inp.dataset.i)+1}"]`); if(nx) nx.focus(); else { list.push(""); draw(); el.querySelector(`input[data-i="${list.length-1}"]`).focus(); } } };
+    });
+    el.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { list.splice(Number(b.dataset.rm),1); if(!list.length) list=[""]; draw(); });
+    el.querySelector("[data-add]").onclick = () => { list.push(""); draw(); el.querySelector(`input[data-i="${list.length-1}"]`).focus(); };
+    el.querySelector("[data-fill]").onclick = () => {
+      const first = list.find(v=>/^\d+$/.test(v)); if(!first) return;
+      const n = Math.max(targetN()||0, list.length, 1); const start = Number(first);
+      list = Array.from({length:n}, (_,k)=>String(start+k)); draw();
+    };
+  };
+  draw();
+  return { values: () => list.map(v=>v.trim()).filter(Boolean),
+           hasDup: () => { const v = list.map(x=>x.trim()).filter(Boolean); return new Set(v).size !== v.length; } };
+}
 function adminEditForm(j){
   const bts = batchesOf(j.id);
   const F = (k,l,type="text",v=j[k],extra="") => `<div><label class="f">${l}</label><input type="${type}" id="a_${k}" value="${esc(v??"")}" ${type==="number"?'step="0.01" inputmode="decimal"':""} ${extra}></div>`;
