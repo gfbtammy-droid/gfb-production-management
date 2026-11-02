@@ -271,7 +271,7 @@ const T = {
   jobCreated:"Job dicipta", pwMin:"Minimum 8 aksara", loading:"Memuatkan…", offline:"Luar talian - sedang menyambung semula",
   showing:"Menunjukkan", of:"daripada", moreBtn:"Tunjuk lagi", userHelp:"Pengguna log masuk dengan nama pengguna dan kata laluan ini. Satu akaun boleh digunakan di beberapa peranti serentak.",
   roleHelp:"Apa yang setiap peranan boleh buat ditetapkan di Tetapan Akses di bawah.",
-  joAdd:"＋ Tambah JOB", joFill:"Isi berturutan dari JOB pertama", joDup:"Nombor JOB berulang ditanda merah.", joCount:"bilangan",
+  packJobs:"Bilangan JOB Pembungkusan", joAdd:"＋ Tambah JOB", joFill:"Isi berturutan dari JOB pertama", joDup:"Nombor JOB berulang ditanda merah.", joCount:"bilangan",
   accessLog:"Log Akses", lastSeen:"Terakhir aktif", never:"belum pernah", from:"Dari", to:"Hingga", event:"Aktiviti", device:"Peranti", records:"rekod",
   EV_LOGIN:"Log masuk", EV_OPEN:"Buka aplikasi", EV_LOGOUT:"Log keluar", EV_LOGIN_FAILED:"Gagal log masuk",
   balShort:"Baki", balPending:"Baki belum dibungkus", afterPacking:"dikira selepas pembungkusan selesai", actPackBal:"Rekod baki pembungkusan",
@@ -337,7 +337,7 @@ const T = {
   jobCreated:"Job created", pwMin:"Minimum 8 characters", loading:"Loading…", offline:"Offline - reconnecting",
   showing:"Showing", of:"of", moreBtn:"Show more", userHelp:"Users sign in with this username and password. One account can be used on several devices at the same time.",
   roleHelp:"What each role can do is set under Access Settings below.",
-  joAdd:"＋ Add JOB", joFill:"Fill in sequence from first JOB", joDup:"Duplicate JOB numbers are marked red.", joCount:"count",
+  packJobs:"No. of JOB Packing", joAdd:"＋ Add JOB", joFill:"Fill in sequence from first JOB", joDup:"Duplicate JOB numbers are marked red.", joCount:"count",
   accessLog:"Access Log", lastSeen:"Last active", never:"never", from:"From", to:"To", event:"Activity", device:"Device", records:"records",
   EV_LOGIN:"Signed in", EV_OPEN:"Opened app", EV_LOGOUT:"Signed out", EV_LOGIN_FAILED:"Failed sign-in",
   balShort:"Bal.", balPending:"Balance pending", afterPacking:"calculated once packing is complete", actPackBal:"Record packing balance",
@@ -946,7 +946,7 @@ function adminEditForm(j){
     <div class="grid2" style="margin-top:14px"><button type="button" class="btn ghost" id="ac">${t("cancel")}</button><button class="btn primary" id="as">${t("save")}</button></div></form>`;
   sheet(`${t("adminEdit")} · ${esc(j.job_no)}`, body, "data-wide");
   const edMix = joEditor($("#ed_mix"), j.jo_mix||[], $("#ed_mix_n"), () => parseInt($("#a_batches").value)||0);
-  const edPack = joEditor($("#ed_pack"), j.jo_pack||[], $("#ed_pack_n"), () => 1);
+  const edPack = joEditor($("#ed_pack"), j.jo_pack||[], $("#ed_pack_n"), () => Math.max((j.jo_pack||[]).length,1));
   const pq=$("#a_pack_qty"), pu=$("#a_pack_uom"), pw=$("#a_pack_unit_kg"), po=$("#a_packing_output");
   const recalc = () => { const q=Number(pq.value), w=Number(pw.value); if(pq.value==="") return; po.value = pu.value==="KG"||!pu.value ? q : (w? Math.round(q*w*100)/100 : po.value); };
   [pq,pu,pw].forEach(x=>{ x.oninput=recalc; x.onchange=recalc; });
@@ -1005,6 +1005,7 @@ function openJobForm(j){
     <div class="card" style="padding:10px 12px;margin-top:10px"><div class="row" style="justify-content:space-between"><span class="muted">${t("total")}</span><b id="j_total">-</b></div>
       <div class="muted small" id="j_jo" style="margin-top:4px"></div></div>
     <label class="check"><input type="checkbox" id="j_bulk" ${j?.bulk_packing?"checked":""}> ${t("bulk")}</label>
+    <div id="j_pnw"><label class="f">${t("packJobs")}</label><input type="number" id="j_pn" step="1" min="1" max="20" inputmode="numeric" value="${j?.pack_jobs??Math.max((j?.jo_pack||[]).length,1)}"></div>
     <label class="f">${t("notes")}</label><textarea id="j_notes">${esc(j?.notes||"")}</textarea>
     ${!isEdit && perm("job_release")?`<label class="check"><input type="checkbox" id="j_rel"> ${t("releaseNow")}</label>`:""}
     <div id="jerr"></div>
@@ -1014,12 +1015,13 @@ function openJobForm(j){
   const calc = () => {
     const bq = Number($("#j_bq").value)||0, bt = parseInt($("#j_bt").value)||0;
     $("#j_total").textContent = bq && bt ? kg(bq*bt) : "-";
-    const bulk = $("#j_bulk").checked;
+    const bulk = $("#j_bulk").checked, pn = Math.max(parseInt($("#j_pn").value)||1,1);
+    $("#j_pnw").classList.toggle("hidden", bulk);
     $("#j_jo").textContent = isEdit
-      ? `${t("joMix")}: ${(j.jo_mix||[]).join(", ")}${bt>(j.jo_mix||[]).length?" + "+(bt-(j.jo_mix||[]).length)+" baru/new":""}`
-      : `${t("joAuto")} (${bt||0} ${t("joMix")}${bulk?"":" + 1 "+t("joPack")})`;
+      ? `${t("joMix")}: ${(j.jo_mix||[]).join(", ")}${bt>(j.jo_mix||[]).length?" + "+(bt-(j.jo_mix||[]).length)+" baru/new":""}${bulk?"":` · ${t("joPack")}: ${(j.jo_pack||[]).join(", ")||"-"}${pn>(j.jo_pack||[]).length?" + "+(pn-(j.jo_pack||[]).length)+" baru/new":""}`}`
+      : `${t("joAuto")} (${bt||0} ${t("joMix")}${bulk?"":" + "+pn+" "+t("joPack")})`;
   };
-  ["#j_bq","#j_bt","#j_bulk"].forEach(s=>$(s).oninput=calc); $("#j_bulk").onchange=calc; calc();
+  ["#j_bq","#j_bt","#j_bulk","#j_pn"].forEach(s=>$(s).oninput=calc); $("#j_bulk").onchange=calc; calc();
   const autoItem = () => {
     if($("#j_item").value.trim()) return;
     const pr = $("#j_product").value.trim().toUpperCase(), cu = $("#j_customer").value.trim().toUpperCase(); if(!pr) return;
@@ -1039,6 +1041,7 @@ function openJobForm(j){
       total_planned: Number($("#j_bq").value) * parseInt($("#j_bt").value),
       bulk_packing: $("#j_bulk").checked, notes: $("#j_notes").value.trim() || null
     };
+    if(!row.bulk_packing){ const pn = parseInt($("#j_pn").value); if(!(pn>=1 && pn<=20)){ $("#jerr").innerHTML=`<div class="errbox">${t("packJobs")}: 1 - 20</div>`; $("#js").disabled=false; return; } row.pack_jobs = pn; }
     try{
       if(isEdit){ await updateJob(j.id, row); await refreshBatches(j.id); toast(t("saved")); openJob(j.id); }
       else {
