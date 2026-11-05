@@ -101,6 +101,7 @@ label.f{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px;font-w
 .steps{display:flex;gap:4px;margin:4px 0 2px}
 .steps i{flex:1;height:5px;border-radius:3px;background:var(--line)}
 .steps i.on{background:var(--brand)}
+.tsteps{width:84px;gap:3px;margin-top:6px}.tsteps i{height:4px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 @media(min-width:760px){.kpis{grid-template-columns:repeat(4,1fr)}}
@@ -639,7 +640,7 @@ function jobTable(rows){
   return `<div class="card tbl-wrap"><table class="jobs"><thead><tr>${COLS.map(([k,l,n])=>`<th data-sort="${k}" class="${n?"n":""}">${esc(t(l))}${arrow(k)}</th>`).join("")}</tr></thead><tbody>
   ${rows.map(j=>{ const v=varPct(j); const ov=overTarget(j);
     return `<tr data-id="${j.id}">
-      <td><b>${esc(j.job_no)}</b><div style="margin-top:3px">${badge(j.status)}</div></td><td>${fds(j.plan_date)}</td><td>${j.date_released?fds(j.date_released):'<span class="muted">-</span>'}</td><td>${j.date_done?fds(j.date_done):'<span class="muted">-</span>'}</td><td style="white-space:normal;min-width:80px;max-width:110px">${esc(j.machine)}</td>
+      <td><b>${esc(j.job_no)}</b><div style="margin-top:3px">${badge(j.status)}</div>${STEP[j.status]>=0?`<div class="steps tsteps" title="${esc(t(j.status))} (${STEP[j.status]+1}/6)">${[0,1,2,3,4,5].map(i=>`<i class="${i<=STEP[j.status]?"on":""}"></i>`).join("")}</div>`:""}</td><td>${fds(j.plan_date)}</td><td>${j.date_released?fds(j.date_released):'<span class="muted">-</span>'}</td><td>${j.date_done?fds(j.date_done):'<span class="muted">-</span>'}</td><td style="white-space:normal;min-width:80px;max-width:110px">${esc(j.machine)}</td>
       <td class="wrapc">${esc(j.product)}${j.item_code?`<div class="muted small">${esc(j.item_code)}</div>`:""}</td><td class="wrapc" style="min-width:90px;max-width:140px">${j.customer?esc(j.customer):'<span class="muted">-</span>'}</td><td class="wrapc" style="min-width:60px">${j.notes||j.remarks?`${esc(j.notes||"")}${j.notes&&j.remarks?"<br>":""}${j.remarks?`<span class="muted small">${esc(j.remarks)}</span>`:""}`:'<span class="muted">-</span>'}</td>
       <td class="n"><b>${nf(j.total_planned, j.total_planned%1?2:0)}</b><div class="muted small">${nf(j.batch_qty, j.batch_qty%1?2:0)} × ${j.batches}</div></td>
       <td>${esc(jo(j.jo_mix))}${(j.jo_pack||[]).length?`<div class="muted small">P: ${esc(j.jo_pack.map(JO).join(", "))}</div>`:""}</td>
