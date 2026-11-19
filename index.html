@@ -199,6 +199,9 @@ table.jobs tr.sel td{background:var(--brand-soft)}
 .jcell{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:4px 6px 4px 8px}
 .jcell .n{font-size:12px;color:var(--muted);min-width:18px;font-variant-numeric:tabular-nums}
 .jcell input{flex:1;min-width:0;width:100%;min-height:36px;padding:6px 4px;border:0;outline:none;box-shadow:none!important;background:transparent;font-weight:600;font-variant-numeric:tabular-nums}
+.kgrid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.jcell .r_kg{max-width:84px;text-align:right;border-left:1px solid var(--line)!important;padding-left:8px}
+.jcell .u{font-size:12px;color:var(--muted)}
 .jcell.dup{border-color:var(--bad);background:var(--bad-soft)}
 .jcell .rm{border:0;background:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px}
 .jtools{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
@@ -272,7 +275,7 @@ const T = {
   jobCreated:"Job dicipta", pwMin:"Minimum 8 aksara", loading:"Memuatkan…", offline:"Luar talian - sedang menyambung semula",
   showing:"Menunjukkan", of:"daripada", moreBtn:"Tunjuk lagi", userHelp:"Pengguna log masuk dengan nama pengguna dan kata laluan ini. Satu akaun boleh digunakan di beberapa peranti serentak.",
   roleHelp:"Apa yang setiap peranan boleh buat ditetapkan di Tetapan Akses di bawah.",
-  packJobs:"Bilangan JOB Pembungkusan", addSize:"＋ Tambah saiz batch lain", mixedSizes:"Saiz batch berbeza (tukar melalui Edit)", remove:"Buang", joAdd:"＋ Tambah JOB", joFill:"Isi berturutan dari JOB pertama", joDup:"Nombor JOB berulang ditanda merah.", joCount:"bilangan",
+  packJobs:"Bilangan JOB Pembungkusan", addSize:"＋ Tambah saiz batch lain", mixedSizes:"Saiz batch berbeza (tukar melalui Edit)", remove:"Buang", joAdd:"＋ Tambah JOB", joAutoPh:"Auto", sameKg:"KG sama untuk semua", kgEach:"Isi KG untuk setiap batch.", joInvalid:"Nombor JOB mesti nombor sahaja.", joPartial:"Isi semua nombor JOB, atau biarkan semua kosong untuk nombor automatik.", joBlankHelp:"Biarkan nombor JOB kosong untuk nombor automatik, atau taip JOB pertama dan tekan Isi berturutan.", joFill:"Isi berturutan dari JOB pertama", joDup:"Nombor JOB berulang ditanda merah.", joCount:"bilangan",
   accessLog:"Log Akses", lastSeen:"Terakhir aktif", never:"belum pernah", from:"Dari", to:"Hingga", event:"Aktiviti", device:"Peranti", records:"rekod",
   EV_LOGIN:"Log masuk", EV_OPEN:"Buka aplikasi", EV_LOGOUT:"Log keluar", EV_LOGIN_FAILED:"Gagal log masuk",
   balShort:"Baki", balPending:"Baki belum dibungkus", afterPacking:"dikira selepas pembungkusan selesai", actPackBal:"Rekod baki pembungkusan",
@@ -338,7 +341,7 @@ const T = {
   jobCreated:"Job created", pwMin:"Minimum 8 characters", loading:"Loading…", offline:"Offline - reconnecting",
   showing:"Showing", of:"of", moreBtn:"Show more", userHelp:"Users sign in with this username and password. One account can be used on several devices at the same time.",
   roleHelp:"What each role can do is set under Access Settings below.",
-  packJobs:"No. of JOB Packing", addSize:"＋ Add another batch size", mixedSizes:"Mixed batch sizes (change via Edit)", remove:"Remove", joAdd:"＋ Add JOB", joFill:"Fill in sequence from first JOB", joDup:"Duplicate JOB numbers are marked red.", joCount:"count",
+  packJobs:"No. of JOB Packing", addSize:"＋ Add another batch size", mixedSizes:"Mixed batch sizes (change via Edit)", remove:"Remove", joAdd:"＋ Add JOB", joAutoPh:"Auto", sameKg:"Same KG for all", kgEach:"Enter the KG for every batch.", joInvalid:"JOB numbers must be digits only.", joPartial:"Fill in all JOB numbers, or leave them all blank for automatic numbers.", joBlankHelp:"Leave JOB numbers blank for automatic numbers, or type the first JOB and tap Fill in sequence.", joFill:"Fill in sequence from first JOB", joDup:"Duplicate JOB numbers are marked red.", joCount:"count",
   accessLog:"Access Log", lastSeen:"Last active", never:"never", from:"From", to:"To", event:"Activity", device:"Device", records:"records",
   EV_LOGIN:"Signed in", EV_OPEN:"Opened app", EV_LOGOUT:"Signed out", EV_LOGIN_FAILED:"Failed sign-in",
   balShort:"Bal.", balPending:"Balance pending", afterPacking:"calculated once packing is complete", actPackBal:"Record packing balance",
@@ -401,6 +404,7 @@ const sClass = s => "s-" + s.replace(" ","_");
 const badge = s => `<span class="badge ${sClass(s)}">${esc(t(s))}</span>`;
 function planLines(j){ return (Array.isArray(j.batch_plan) && j.batch_plan.length) ? j.batch_plan.map(l=>({qty:Number(l.qty), n:parseInt(l.n)})) : [{qty:Number(j.batch_qty), n:j.batches}]; }
 function planText(j){ return planLines(j).map(l=>`${nf(l.qty, l.qty%1?2:0)} × ${l.n}`).join(" + "); }
+function groupPlan(rows){ const g=[]; rows.forEach(r=>{ const q=Number(r.kg); if(g.length && g[g.length-1].qty===q) g[g.length-1].n++; else g.push({qty:q, n:1}); }); return g; }
 function planQtyAt(j, i){ let k=i; for(const l of planLines(j)){ if(k < l.n) return l.qty; k -= l.n; } return Number(j.batch_qty); }
 const packPending = j => j.packing_complete===false && !["CANCELLED"].includes(j.status);
 const packBal = j => packPending(j) && j.mixing_output!=null ? Math.max(Number(j.mixing_output)-Number(j.packing_output||0),0) : null;
@@ -895,6 +899,32 @@ function packForm(j, done){
     catch(er){ $("#perr").innerHTML = `<div class="errbox">${esc(errMsg(er))}</div>`; $("#ps").disabled=false; }
   };
 }
+// JOB rows for New Job / Edit: optional JOB number per row (blank = automatic) and, for mixing, the KG of that batch
+function rowsEditor(el, rows, opts){
+  let list = rows.length ? rows.map(r=>({...r})) : [{jo:"", kg:""}];
+  const kgMode = !!opts.kg, onChange = opts.onChange || (()=>{});
+  const sync = () => { el.querySelectorAll("[data-ri]").forEach(c=>{ const i=+c.dataset.ri; list[i].jo=c.querySelector(".r_jo").value.trim(); if(kgMode) list[i].kg=c.querySelector(".r_kg").value; }); };
+  const mark = () => { const c={}; list.forEach(r=>{ if(r.jo) c[r.jo]=(c[r.jo]||0)+1; }); el.querySelectorAll("[data-ri]").forEach(x=>{ const r=list[+x.dataset.ri]; x.classList.toggle("dup", !!r.jo && c[r.jo]>1); }); };
+  const draw = () => {
+    el.innerHTML = `<div class="jgrid ${kgMode?"kgrid":""}">${list.map((r,i)=>`<div class="jcell" data-ri="${i}"><span class="n">${i+1}</span><input class="r_jo" inputmode="numeric" value="${esc(r.jo||"")}" placeholder="${t("joAutoPh")}">${kgMode?`<input class="r_kg" type="number" step="0.01" min="0" inputmode="decimal" value="${r.kg??""}" placeholder="KG"><span class="u">KG</span>`:""}<button type="button" class="rm" data-rm="${i}" aria-label="remove">×</button></div>`).join("")}</div>
+      <div class="jtools">${kgMode?`<label class="small muted" style="display:flex;align-items:center;gap:6px">${t("batches")} <input type="number" min="1" max="99" step="1" class="r_cnt" value="${list.length}" style="width:70px;min-height:36px;padding:6px 8px"></label>`:""}
+      <button type="button" class="btn ghost" data-add>${t("joAdd")}</button><button type="button" class="btn ghost" data-fill>${t("joFill")}</button>${kgMode?`<button type="button" class="btn ghost" data-same>${t("sameKg")}</button>`:""}</div>`;
+    el.querySelectorAll("[data-ri] input").forEach(inp => { inp.oninput = () => { sync(); onChange(); }; inp.onchange = mark; });
+    el.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { sync(); list.splice(+b.dataset.rm,1); if(!list.length) list=[{jo:"",kg:""}]; draw(); onChange(); });
+    el.querySelector("[data-add]").onclick = () => { sync(); list.push({jo:"", kg: kgMode ? (list[list.length-1]?.kg||"") : ""}); draw(); onChange(); el.querySelectorAll(".r_jo")[list.length-1].focus(); };
+    el.querySelector("[data-fill]").onclick = () => { sync(); const first = list.find(r=>/^\d+$/.test(r.jo)); if(!first) return; const st=Number(first.jo), k0=list.indexOf(first);
+      list.forEach((r,k)=>{ if(k>=k0) r.jo=String(st+k-k0); }); draw(); onChange(); if(opts.afterFill) opts.afterFill(st + list.length - k0); };
+    if(kgMode){
+      el.querySelector("[data-same]").onclick = () => { sync(); const v = list.find(r=>Number(r.kg)>0)?.kg; if(!v) return; list.forEach(r=>r.kg=v); draw(); onChange(); };
+      const cnt = el.querySelector(".r_cnt"); cnt.onchange = () => { sync(); const n = Math.min(Math.max(parseInt(cnt.value)||1,1),99); const last=list[list.length-1]?.kg||"";
+        while(list.length<n) list.push({jo:"", kg:last}); list.length = n; draw(); onChange(); };
+    }
+    mark();
+  };
+  draw();
+  return { rows: () => { sync(); return list.map(r=>({jo:(r.jo||"").trim(), kg:Number(r.kg)||0})); },
+           fillFrom: n => { sync(); if(list.every(r=>!r.jo)){ list.forEach((r,k)=>r.jo=String(n+k)); draw(); onChange(); } } };
+}
 function joEditor(el, initial, countEl, targetN){
   let list = initial.length ? [...initial] : [""];
   const markDup = () => { const c={}; list.forEach(v=>{ if(v) c[v]=(c[v]||0)+1; });
@@ -1005,40 +1035,30 @@ function openJobForm(j){
     <label class="f">${t("itemCode")}</label><input type="text" id="j_item" list="dl_i" value="${esc(j?.item_code||"")}" autocapitalize="characters">
     <datalist id="dl_i">${itemCodes.map(c=>`<option value="${esc(c)}">`).join("")}</datalist>
     <div class="muted small" style="margin-top:4px">${t("itemHelp")}</div>
-    <div id="j_lines"></div>
-    <button type="button" class="btn ghost" id="j_addl" style="margin-top:8px;min-height:36px;padding:6px 12px">${t("addSize")}</button>
+    <label class="f">${t("joMix")} <span class="muted" id="j_mix_n"></span></label><div id="j_mix"></div>
     <div class="card" style="padding:10px 12px;margin-top:10px"><div class="row" style="justify-content:space-between"><span class="muted">${t("total")}</span><b id="j_total">-</b></div>
       <div class="muted small" id="j_jo" style="margin-top:4px"></div></div>
     <label class="check"><input type="checkbox" id="j_bulk" ${j?.bulk_packing?"checked":""}> ${t("bulk")}</label>
-    <div id="j_pnw"><label class="f">${t("packJobs")}</label><input type="number" id="j_pn" step="1" min="1" max="20" inputmode="numeric" value="${j?.pack_jobs??Math.max((j?.jo_pack||[]).length,1)}"></div>
+    <div id="j_pnw"><label class="f">${t("joPack")} <span class="muted" id="j_pack_n"></span></label><div id="j_pack"></div></div>
     <label class="f">${t("notes")}</label><textarea id="j_notes">${esc(j?.notes||"")}</textarea>
     ${!isEdit && perm("job_release")?`<label class="check"><input type="checkbox" id="j_rel"> ${t("releaseNow")}</label>`:""}
     <div id="jerr"></div>
     <div class="grid2" style="margin-top:12px"><button type="button" class="btn ghost" id="jc">${t("cancel")}</button><button class="btn primary" id="js">${t("save")}</button></div>
   </form>`;
   sheet(isEdit ? `${t("actEdit")} · ${esc(j.job_no)}` : t("newJob"), body);
-  let lines = j ? planLines(j) : [{qty:"", n:1}];
-  const readLines = () => [...document.querySelectorAll("#j_lines .jl")].map(r=>({qty:Number(r.querySelector(".jl_q").value)||0, n:parseInt(r.querySelector(".jl_n").value)||0}));
-  const drawLines = () => {
-    $("#j_lines").innerHTML = lines.map((l,i)=>`<div class="grid2 jl" style="align-items:end;${i?"margin-top:6px":""}">
-      <div><label class="f">${t("batchQty")}${lines.length>1?` <span class="muted">(${i+1})</span>`:""}</label><input type="number" class="jl_q" step="0.01" min="0.01" inputmode="decimal" value="${l.qty||""}" required></div>
-      <div style="display:flex;gap:6px;align-items:end"><div style="flex:1"><label class="f">${t("batches")}</label><input type="number" class="jl_n" step="1" min="1" max="99" inputmode="numeric" value="${l.n||1}" required></div>
-      ${lines.length>1?`<button type="button" class="btn ghost jl_x" data-i="${i}" title="${t("remove")}" style="padding:6px 12px">✕</button>`:""}</div></div>`).join("");
-    document.querySelectorAll("#j_lines input").forEach(x=>x.oninput=()=>{ lines = readLines(); calc(); });
-    document.querySelectorAll("#j_lines .jl_x").forEach(x=>x.onclick=()=>{ lines = readLines(); lines.splice(+x.dataset.i,1); drawLines(); calc(); });
-  };
+  const mixInit = j ? (j.jo_mix||[]).map((x,i)=>({jo:x, kg:planQtyAt(j,i)})) : [{jo:"", kg:""}];
+  const packInit = j ? (j.jo_pack||[]).map(x=>({jo:x})) : [{jo:""}];
+  let edPack;
   const calc = () => {
-    const L = readLines(), bt = L.reduce((a,l)=>a+l.n,0), tot = L.reduce((a,l)=>a+l.qty*l.n,0);
-    $("#j_total").textContent = tot ? kg(tot) + (L.length>1 ? ` (${L.map(l=>`${nf(l.qty)} × ${l.n}`).join(" + ")})` : "") : "-";
-    const bulk = $("#j_bulk").checked, pn = Math.max(parseInt($("#j_pn").value)||1,1);
+    const M = edMixR.rows(), P = edPack ? edPack.rows() : [], tot = M.reduce((a,r)=>a+r.kg,0), bulk = $("#j_bulk").checked;
     $("#j_pnw").classList.toggle("hidden", bulk);
-    $("#j_jo").textContent = isEdit
-      ? `${t("joMix")}: ${(j.jo_mix||[]).join(", ")}${bt>(j.jo_mix||[]).length?" + "+(bt-(j.jo_mix||[]).length)+" baru/new":""}${bulk?"":` · ${t("joPack")}: ${(j.jo_pack||[]).join(", ")||"-"}${pn>(j.jo_pack||[]).length?" + "+(pn-(j.jo_pack||[]).length)+" baru/new":""}`}`
-      : `${t("joAuto")} (${bt||0} ${t("joMix")}${bulk?"":" + "+pn+" "+t("joPack")})`;
+    $("#j_total").textContent = tot ? `${kg(tot)} (${planText({batch_plan:groupPlan(M)})})` : "-";
+    $("#j_mix_n").textContent = `(${M.length})`; if($("#j_pack_n")) $("#j_pack_n").textContent = `(${bulk?0:P.length})`;
+    $("#j_jo").textContent = t("joBlankHelp");
   };
-  drawLines();
-  $("#j_addl").onclick = () => { lines = readLines(); lines.push({qty:"", n:1}); drawLines(); calc(); const q=document.querySelectorAll("#j_lines .jl_q"); q[q.length-1].focus(); };
-  ["#j_bulk","#j_pn"].forEach(s=>$(s).oninput=calc); $("#j_bulk").onchange=calc; calc();
+  const edMixR = rowsEditor($("#j_mix"), mixInit, {kg:true, onChange:()=>calc(), afterFill:n=>edPack&&edPack.fillFrom(n)});
+  edPack = rowsEditor($("#j_pack"), packInit.length?packInit:[{jo:""}], {onChange:()=>calc()});
+  $("#j_bulk").onchange=calc; calc();
   const autoItem = () => {
     if($("#j_item").value.trim()) return;
     const pr = $("#j_product").value.trim().toUpperCase(), cu = $("#j_customer").value.trim().toUpperCase(); if(!pr) return;
@@ -1057,10 +1077,25 @@ function openJobForm(j){
       uom:"KG",
       bulk_packing: $("#j_bulk").checked, notes: $("#j_notes").value.trim() || null
     };
-    { const L = readLines(), bt = L.reduce((a,l)=>a+l.n,0);
-      if(L.some(l=>!(l.qty>0) || !(l.n>=1)) || bt<1 || bt>99){ $("#jerr").innerHTML=`<div class="errbox">${t("batchQty")} / ${t("batches")}: 1 - 99</div>`; $("#js").disabled=false; return; }
-      row.batch_qty = L[0].qty; row.batches = bt; row.total_planned = L.reduce((a,l)=>a+l.qty*l.n,0); row.batch_plan = L.length>1 ? L : null; }
-    if(!row.bulk_packing){ const pn = parseInt($("#j_pn").value); if(!(pn>=1 && pn<=20)){ $("#jerr").innerHTML=`<div class="errbox">${t("packJobs")}: 1 - 20</div>`; $("#js").disabled=false; return; } row.pack_jobs = pn; }
+    const fail = msg => { $("#jerr").innerHTML=`<div class="errbox">${msg}</div>`; $("#js").disabled=false; };
+    const M = edMixR.rows(), P = row.bulk_packing ? [] : edPack.rows();
+    if(M.length<1 || M.length>99) return fail(`${t("batches")}: 1 - 99`);
+    if(M.some(r=>!(r.kg>0))) return fail(t("kgEach"));
+    const G = groupPlan(M);
+    row.batch_qty = M[0].kg; row.batches = M.length; row.total_planned = M.reduce((a,r)=>a+r.kg,0); row.batch_plan = G.length>1 ? G : null;
+    // JOB numbers: all filled = use them; all blank = automatic; on edit, blanks only for new rows at the end
+    const pickJos = (R, old) => { const v = R.map(r=>r.jo); if(v.some(x=>x && !/^\d{1,9}$/.test(x))) return {err:t("joInvalid")};
+      if(v.every(Boolean)) return {list:v}; const filled = v.filter(Boolean);
+      if(!filled.length && !old.length) return {auto:true};
+      const k = v.findIndex(x=>!x); if(v.slice(k).every(x=>!x) && filled.join() === old.slice(0,filled.length).join()) return {auto:true};
+      return {err:t("joPartial")}; };
+    const pm = pickJos(M, isEdit ? (j.jo_mix||[]) : []); if(pm.err) return fail(pm.err);
+    if(pm.list) row.jo_mix = pm.list;
+    if(!row.bulk_packing){ if(P.length<1 || P.length>20) return fail(`${t("joPack")}: 1 - 20`);
+      const pp = pickJos(P, isEdit ? (j.jo_pack||[]) : []); if(pp.err) return fail(pp.err);
+      row.pack_jobs = P.length; if(pp.list) row.jo_pack = pp.list; }
+    { const all = [...M.map(r=>r.jo), ...P.map(r=>r.jo)].filter(Boolean); if(new Set(all).size !== all.length) return fail(t("joDup")); }
+    if(pm.list && pm.list.length !== row.batches) return fail(t("joPartial"));
     try{
       if(isEdit){ await updateJob(j.id, row); await refreshBatches(j.id); toast(t("saved")); openJob(j.id); }
       else {
