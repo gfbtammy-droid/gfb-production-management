@@ -732,7 +732,7 @@ async function openJob(id, keepScroll){
         <tr><td colspan="2"><b>${t("sum")}</b></td><td class="n"><b>${j.mixing_output!=null?nf(j.mixing_output, j.mixing_output%1?2:0):"-"}</b></td><td></td></tr></table>`
       : `<div class="jo">${(j.jo_mix||[]).map(x=>`<span>${esc(JO(x))} <span class="muted">· ${t("bn")} ${esc(x)}</span></span>`).join("")||`<span class="muted">${t("none")}</span>`}</div>
          ${j.mixing_output!=null?`<div class="muted small" style="margin-top:6px">${t("legacyTotal")}</div>`:""}`}
-     <h3 style="margin-top:10px">${t("joPack")}</h3><div class="jo">${(j.jo_pack||[]).map(x=>`<span>${esc(JO(x))}</span>`).join("")||`<span class="muted">${j.bulk_packing?t("bulk"):t("none")}</span>`}</div></div>
+     <h3 style="margin-top:10px">${t("joPack")}</h3><div class="jo">${(j.jo_pack||[]).map((x,i)=>`<span>${esc(JO(x))}${Array.isArray(j.pack_plan)&&j.pack_plan[i]?` · ${esc(kg(j.pack_plan[i]))}`:""}</span>`).join("")||`<span class="muted">${j.bulk_packing?t("bulk"):t("none")}</span>`}</div></div>
    <div class="card sec"><h3>${t("mixing")} & ${t("packing")}</h3>
      <dl class="kv">
       <dt>${t("c_rel")}</dt><dd>${fd(j.date_released)}</dd>
@@ -907,17 +907,18 @@ function rowsEditor(el, rows, opts){
   const mark = () => { const c={}; list.forEach(r=>{ if(r.jo) c[r.jo]=(c[r.jo]||0)+1; }); el.querySelectorAll("[data-ri]").forEach(x=>{ const r=list[+x.dataset.ri]; x.classList.toggle("dup", !!r.jo && c[r.jo]>1); }); };
   const draw = () => {
     el.innerHTML = `<div class="jgrid ${kgMode?"kgrid":""}">${list.map((r,i)=>`<div class="jcell" data-ri="${i}"><span class="n">${i+1}</span><input class="r_jo" inputmode="numeric" value="${esc(r.jo||"")}" placeholder="${t("joAutoPh")}">${kgMode?`<input class="r_kg" type="number" step="0.01" min="0" inputmode="decimal" value="${r.kg??""}" placeholder="KG"><span class="u">KG</span>`:""}<button type="button" class="rm" data-rm="${i}" aria-label="remove">×</button></div>`).join("")}</div>
-      <div class="jtools">${kgMode?`<label class="small muted" style="display:flex;align-items:center;gap:6px">${t("batches")} <input type="number" min="1" max="99" step="1" class="r_cnt" value="${list.length}" style="width:70px;min-height:36px;padding:6px 8px"></label>`:""}
+      <div class="jtools">${kgMode?`<label class="small muted" style="display:flex;align-items:center;gap:6px">${opts.countLabel||t("batches")} <input type="number" min="1" max="${opts.max||99}" step="1" class="r_cnt" value="${list.length}" style="width:70px;min-height:36px;padding:6px 8px"></label>`:""}
       <button type="button" class="btn ghost" data-add>${t("joAdd")}</button><button type="button" class="btn ghost" data-fill>${t("joFill")}</button>${kgMode?`<button type="button" class="btn ghost" data-same>${t("sameKg")}</button>`:""}</div>`;
     el.querySelectorAll("[data-ri] input").forEach(inp => { inp.oninput = () => { sync(); onChange(); }; inp.onchange = mark; });
     el.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { sync(); list.splice(+b.dataset.rm,1); if(!list.length) list=[{jo:"",kg:""}]; draw(); onChange(); });
-    el.querySelector("[data-add]").onclick = () => { sync(); list.push({jo:"", kg: kgMode ? (list[list.length-1]?.kg||"") : ""}); draw(); onChange(); el.querySelectorAll(".r_jo")[list.length-1].focus(); };
+    const nextJo = () => { const l=list[list.length-1]?.jo; return /^\d+$/.test(l||"") ? String(Number(l)+1) : ""; };
+    el.querySelector("[data-add]").onclick = () => { sync(); list.push({jo:nextJo(), kg: kgMode ? (list[list.length-1]?.kg||"") : ""}); draw(); onChange(); el.querySelectorAll(".r_jo")[list.length-1].focus(); };
     el.querySelector("[data-fill]").onclick = () => { sync(); const first = list.find(r=>/^\d+$/.test(r.jo)); if(!first) return; const st=Number(first.jo), k0=list.indexOf(first);
       list.forEach((r,k)=>{ if(k>=k0) r.jo=String(st+k-k0); }); draw(); onChange(); if(opts.afterFill) opts.afterFill(st + list.length - k0); };
     if(kgMode){
       el.querySelector("[data-same]").onclick = () => { sync(); const v = list.find(r=>Number(r.kg)>0)?.kg; if(!v) return; list.forEach(r=>r.kg=v); draw(); onChange(); };
-      const cnt = el.querySelector(".r_cnt"); cnt.onchange = () => { sync(); const n = Math.min(Math.max(parseInt(cnt.value)||1,1),99); const last=list[list.length-1]?.kg||"";
-        while(list.length<n) list.push({jo:"", kg:last}); list.length = n; draw(); onChange(); };
+      const cnt = el.querySelector(".r_cnt"); cnt.onchange = () => { sync(); const n = Math.min(Math.max(parseInt(cnt.value)||1,1),opts.max||99); const last=list[list.length-1]?.kg||"";
+        while(list.length<n) list.push({jo:nextJo(), kg:last}); list.length = n; draw(); onChange(); };
     }
     mark();
   };
@@ -1047,17 +1048,18 @@ function openJobForm(j){
   </form>`;
   sheet(isEdit ? `${t("actEdit")} · ${esc(j.job_no)}` : t("newJob"), body);
   const mixInit = j ? (j.jo_mix||[]).map((x,i)=>({jo:x, kg:planQtyAt(j,i)})) : [{jo:"", kg:""}];
-  const packInit = j ? (j.jo_pack||[]).map(x=>({jo:x})) : [{jo:""}];
+  const packInit = j ? (j.jo_pack||[]).map((x,i)=>({jo:x, kg:(Array.isArray(j.pack_plan) && j.pack_plan[i]) || ""})) : [{jo:"", kg:""}];
   let edPack;
   const calc = () => {
     const M = edMixR.rows(), P = edPack ? edPack.rows() : [], tot = M.reduce((a,r)=>a+r.kg,0), bulk = $("#j_bulk").checked;
     $("#j_pnw").classList.toggle("hidden", bulk);
     $("#j_total").textContent = tot ? `${kg(tot)} (${planText({batch_plan:groupPlan(M)})})` : "-";
-    $("#j_mix_n").textContent = `(${M.length})`; if($("#j_pack_n")) $("#j_pack_n").textContent = `(${bulk?0:P.length})`;
+    const ptot = P.reduce((a,r)=>a+r.kg,0);
+    $("#j_mix_n").textContent = `(${M.length})`; if($("#j_pack_n")) $("#j_pack_n").textContent = `(${bulk?0:P.length})${ptot?` · ${kg(ptot)}`+(tot && Math.abs(ptot-tot)>0.005?` ≠ ${t("joMix")} ${kg(tot)}`:""):""}`;
     $("#j_jo").textContent = t("joBlankHelp");
   };
   const edMixR = rowsEditor($("#j_mix"), mixInit, {kg:true, onChange:()=>calc(), afterFill:n=>edPack&&edPack.fillFrom(n)});
-  edPack = rowsEditor($("#j_pack"), packInit.length?packInit:[{jo:""}], {onChange:()=>calc()});
+  edPack = rowsEditor($("#j_pack"), packInit.length?packInit:[{jo:"", kg:""}], {kg:true, countLabel:t("packJobs"), max:20, onChange:()=>calc()});
   $("#j_bulk").onchange=calc; calc();
   const autoItem = () => {
     if($("#j_item").value.trim()) return;
@@ -1093,7 +1095,9 @@ function openJobForm(j){
     if(pm.list) row.jo_mix = pm.list;
     if(!row.bulk_packing){ if(P.length<1 || P.length>20) return fail(`${t("joPack")}: 1 - 20`);
       const pp = pickJos(P, isEdit ? (j.jo_pack||[]) : []); if(pp.err) return fail(pp.err);
-      row.pack_jobs = P.length; if(pp.list) row.jo_pack = pp.list; }
+      row.pack_jobs = P.length; if(pp.list) row.jo_pack = pp.list;
+      row.pack_plan = P.some(r=>r.kg>0) ? P.map(r=>r.kg>0 ? r.kg : null) : null; }
+    else row.pack_plan = null;
     { const all = [...M.map(r=>r.jo), ...P.map(r=>r.jo)].filter(Boolean); if(new Set(all).size !== all.length) return fail(t("joDup")); }
     if(pm.list && pm.list.length !== row.batches) return fail(t("joPartial"));
     try{
@@ -1769,7 +1773,7 @@ function editUser(u){
 }
 function exportCsv(subset){
   const src = Array.isArray(subset) ? subset : S.jobs;
-  const cols = ["job_no","machine","plan_date","item_code","product","customer","batch_qty","batches","total_planned","jo_mix","jo_pack","bulk_packing","status","date_released","date_mixing","date_done","mixing_output","batch_detail","date_packing","pack_qty","pack_uom","pack_unit_kg","packing_output","packing_complete","variance_kg","date_qc","qc_result","to_req_no","date_transferred","date_closed","notes","remarks","wastage_cause","wastage_action","wastage_verified_by","wastage_verified_date"];
+  const cols = ["job_no","machine","plan_date","item_code","product","customer","batch_qty","batches","total_planned","jo_mix","jo_pack","pack_plan","bulk_packing","status","date_released","date_mixing","date_done","mixing_output","batch_detail","date_packing","pack_qty","pack_uom","pack_unit_kg","packing_output","packing_complete","variance_kg","date_qc","qc_result","to_req_no","date_transferred","date_closed","notes","remarks","wastage_cause","wastage_action","wastage_verified_by","wastage_verified_date"];
   const rows = [...src].sort((a,b)=>a.id-b.id).map(j=>cols.map(c=>{ let v = c==="batch_detail" ? batchesOf(j.id).map(b=>`${b.jo_no}:${b.mix_kg??""}`).join(" ") : c==="jo_mix"||c==="jo_pack" ? (j[c]||[]).map(JO) : j[c]; if(Array.isArray(v)) v=v.join(" "); if(v==null) v=""; v=String(v); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; }).join(","));
   const blob = new Blob(["﻿"+cols.join(",")+"\n"+rows.join("\n")], {type:"text/csv;charset=utf-8"});
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `GFB_Production_${today()}.csv`; a.click();
