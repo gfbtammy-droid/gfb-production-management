@@ -74,7 +74,7 @@ label.f{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px;font-w
 .s-CLOSED{background:var(--ok-soft);color:var(--ok)}
 .s-CANCELLED{background:var(--bad-soft);color:var(--bad)}
 .flag{background:var(--bad-soft);color:var(--bad)}
-.joblist{display:grid;gap:8px}
+.joblist{display:grid;gap:8px;padding-bottom:64px}
 @media(min-width:760px){.joblist{grid-template-columns:1fr 1fr}}
 .job{padding:12px 14px;cursor:pointer;display:block;width:100%;text-align:left}
 .job .top{display:flex;justify-content:space-between;gap:8px;align-items:center}
@@ -607,6 +607,7 @@ function renderJobs(m){
      ${desk?`<button class="btn ghost" id="csv2">${t("exportCsv")}</button>`:""}
      ${desk && perm("job_create")?`<button class="btn primary" id="newJ">+ ${t("newJob")}</button>`:""}
    </div>
+   ${!desk && perm("job_create")?`<button class="fab" id="newJm">+ ${t("newJob")}</button>`:""}
    <div class="chips">${chips.map(([k,l,n])=>`<button class="chip ${S.filter===k?"on":""}" data-f="${esc(k)}">${esc(l)}<b>${n}</b></button>`).join("")}</div>
    ${desk ? jobTable(shown) : `<div class="joblist">${shown.map(jobCard).join("") || `<div class="empty">${t("noData")}</div>`}</div>`}
    ${list.length>lim?`<div style="text-align:center;margin:14px 0"><div class="muted small" style="margin-bottom:6px">${t("showing")} ${lim} ${t("of")} ${list.length}</div><button class="btn ghost" id="moreJobs">${t("moreBtn")}</button></div>`:""}`;
@@ -617,6 +618,7 @@ function renderJobs(m){
   m.querySelectorAll("th[data-sort]").forEach(th=>th.onclick=()=>{ const k=th.dataset.sort; S.sortDir = S.sortKey===k ? -S.sortDir : 1; S.sortKey=k; renderJobs(m); });
   if($("#moreJobs")) $("#moreJobs").onclick=()=>{S.limit+=60; renderJobs(m);};
   if($("#newJ")) $("#newJ").onclick=()=>openJobForm();
+  if($("#newJm")) $("#newJm").onclick=()=>openJobForm();
   if($("#csv2")) $("#csv2").onclick=()=>exportCsv(list);
 }
 const isDesk = () => window.matchMedia("(min-width:900px)").matches;
