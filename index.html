@@ -272,7 +272,7 @@ const T = {
   jobCreated:"Job dicipta", pwMin:"Minimum 8 aksara", loading:"Memuatkan…", offline:"Luar talian - sedang menyambung semula",
   showing:"Menunjukkan", of:"daripada", moreBtn:"Tunjuk lagi", userHelp:"Pengguna log masuk dengan nama pengguna dan kata laluan ini. Satu akaun boleh digunakan di beberapa peranti serentak.",
   roleHelp:"Apa yang setiap peranan boleh buat ditetapkan di Tetapan Akses di bawah.",
-  packJobs:"Bilangan JOB Pembungkusan", joAdd:"＋ Tambah JOB", joFill:"Isi berturutan dari JOB pertama", joDup:"Nombor JOB berulang ditanda merah.", joCount:"bilangan",
+  packJobs:"Bilangan JOB Pembungkusan", addSize:"＋ Tambah saiz batch lain", mixedSizes:"Saiz batch berbeza (tukar melalui Edit)", remove:"Buang", joAdd:"＋ Tambah JOB", joFill:"Isi berturutan dari JOB pertama", joDup:"Nombor JOB berulang ditanda merah.", joCount:"bilangan",
   accessLog:"Log Akses", lastSeen:"Terakhir aktif", never:"belum pernah", from:"Dari", to:"Hingga", event:"Aktiviti", device:"Peranti", records:"rekod",
   EV_LOGIN:"Log masuk", EV_OPEN:"Buka aplikasi", EV_LOGOUT:"Log keluar", EV_LOGIN_FAILED:"Gagal log masuk",
   balShort:"Baki", balPending:"Baki belum dibungkus", afterPacking:"dikira selepas pembungkusan selesai", actPackBal:"Rekod baki pembungkusan",
@@ -338,7 +338,7 @@ const T = {
   jobCreated:"Job created", pwMin:"Minimum 8 characters", loading:"Loading…", offline:"Offline - reconnecting",
   showing:"Showing", of:"of", moreBtn:"Show more", userHelp:"Users sign in with this username and password. One account can be used on several devices at the same time.",
   roleHelp:"What each role can do is set under Access Settings below.",
-  packJobs:"No. of JOB Packing", joAdd:"＋ Add JOB", joFill:"Fill in sequence from first JOB", joDup:"Duplicate JOB numbers are marked red.", joCount:"count",
+  packJobs:"No. of JOB Packing", addSize:"＋ Add another batch size", mixedSizes:"Mixed batch sizes (change via Edit)", remove:"Remove", joAdd:"＋ Add JOB", joFill:"Fill in sequence from first JOB", joDup:"Duplicate JOB numbers are marked red.", joCount:"count",
   accessLog:"Access Log", lastSeen:"Last active", never:"never", from:"From", to:"To", event:"Activity", device:"Device", records:"records",
   EV_LOGIN:"Signed in", EV_OPEN:"Opened app", EV_LOGOUT:"Signed out", EV_LOGIN_FAILED:"Failed sign-in",
   balShort:"Bal.", balPending:"Balance pending", afterPacking:"calculated once packing is complete", actPackBal:"Record packing balance",
@@ -399,6 +399,9 @@ const today = () => new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kuala_
 const ym = d => d ? d.slice(0,7) : null;
 const sClass = s => "s-" + s.replace(" ","_");
 const badge = s => `<span class="badge ${sClass(s)}">${esc(t(s))}</span>`;
+function planLines(j){ return (Array.isArray(j.batch_plan) && j.batch_plan.length) ? j.batch_plan.map(l=>({qty:Number(l.qty), n:parseInt(l.n)})) : [{qty:Number(j.batch_qty), n:j.batches}]; }
+function planText(j){ return planLines(j).map(l=>`${nf(l.qty, l.qty%1?2:0)} × ${l.n}`).join(" + "); }
+function planQtyAt(j, i){ let k=i; for(const l of planLines(j)){ if(k < l.n) return l.qty; k -= l.n; } return Number(j.batch_qty); }
 const packPending = j => j.packing_complete===false && !["CANCELLED"].includes(j.status);
 const packBal = j => packPending(j) && j.mixing_output!=null ? Math.max(Number(j.mixing_output)-Number(j.packing_output||0),0) : null;
 const varPct = j => (j.mixing_output>0 && j.packing_output!=null && !packPending(j)) ? (j.mixing_output - j.packing_output)/j.mixing_output : null;
@@ -642,7 +645,7 @@ function jobTable(rows){
     return `<tr data-id="${j.id}">
       <td><b>${esc(j.job_no)}</b><div style="margin-top:3px">${badge(j.status)}</div>${STEP[j.status]>=0?`<div class="steps tsteps" title="${esc(t(j.status))} (${STEP[j.status]+1}/6)">${[0,1,2,3,4,5].map(i=>`<i class="${i<=STEP[j.status]?"on":""}"></i>`).join("")}</div>`:""}</td><td>${fds(j.plan_date)}</td><td>${j.date_released?fds(j.date_released):'<span class="muted">-</span>'}</td><td>${j.date_done?fds(j.date_done):'<span class="muted">-</span>'}</td><td style="white-space:normal;min-width:80px;max-width:110px">${esc(j.machine)}</td>
       <td class="wrapc">${esc(j.product)}${j.item_code?`<div class="muted small">${esc(j.item_code)}</div>`:""}</td><td class="wrapc" style="min-width:90px;max-width:140px">${j.customer?esc(j.customer):'<span class="muted">-</span>'}</td><td class="wrapc" style="min-width:60px">${j.notes||j.remarks?`${esc(j.notes||"")}${j.notes&&j.remarks?"<br>":""}${j.remarks?`<span class="muted small">${esc(j.remarks)}</span>`:""}`:'<span class="muted">-</span>'}</td>
-      <td class="n"><b>${nf(j.total_planned, j.total_planned%1?2:0)}</b><div class="muted small">${nf(j.batch_qty, j.batch_qty%1?2:0)} × ${j.batches}</div></td>
+      <td class="n"><b>${nf(j.total_planned, j.total_planned%1?2:0)}</b><div class="muted small">${planText(j)}</div></td>
       <td>${esc(jo(j.jo_mix))}${(j.jo_pack||[]).length?`<div class="muted small">P: ${esc(j.jo_pack.map(JO).join(", "))}</div>`:""}</td>
       <td class="n">${j.mixing_output!=null?nf(j.mixing_output, j.mixing_output%1?2:0):"-"}</td>
       <td class="n">${j.packing_output!=null?(j.pack_uom&&j.pack_uom!=="KG"&&j.pack_qty!=null?`${nf(j.pack_qty, j.pack_qty%1?2:0)} ${UOM_SHORT[j.pack_uom]}<div class="muted small">${nf(j.packing_output, j.packing_output%1?2:0)} KG</div>`:nf(j.packing_output, j.packing_output%1?2:0)):(j.bulk_packing?'<span class="muted small">BULK</span>':"-")}</td>
@@ -657,7 +660,7 @@ function jobCard(j){
     <div class="top"><span class="no">${esc(j.job_no)}</span>${badge(j.status)}</div>
     <div class="prod">${esc(j.product)}${j.item_code?` <span class="muted small" style="font-weight:500">${esc(j.item_code)}</span>`:""}</div>
     <div class="meta"><span>${t("s_plan")} <b>${fds(j.plan_date)}</b></span><span>${t("s_rel")} <b>${j.date_released?fds(j.date_released):"-"}</b></span><span>${t("s_done")} <b>${j.date_done?fds(j.date_done):"-"}</b></span></div>
-    <div class="meta"><span>${esc(j.customer||"-")}</span><span>${esc(j.machine)}</span><span>${nf(j.batch_qty, j.batch_qty%1?2:0)} × ${j.batches} = <b>${kg(j.total_planned)}</b></span></div>
+    <div class="meta"><span>${esc(j.customer||"-")}</span><span>${esc(j.machine)}</span><span>${planText(j)} = <b>${kg(j.total_planned)}</b></span></div>
     ${st>=0?`<div class="steps">${[0,1,2,3,4,5].map(i=>`<i class="${i<=st?"on":""}"></i>`).join("")}</div>`:""}
     ${packPending(j)?`<div class="meta" style="margin-top:4px"><span class="badge s-IN_PROCESS">${t("balPending")}: ${kg(packBal(j))}</span></div>`:""}
     ${v!=null?`<div class="meta" style="margin-top:4px"><span>${t("variance")}: <b>${kg(j.variance_kg)}</b> (${pct(v,2)})</span>${flag?`<span class="badge flag">${t("needCause")}</span>`:""}</div>`:""}
@@ -713,7 +716,7 @@ async function openJob(id, keepScroll){
       <dt>${t("c_remark")}</dt><dd>${esc(j.notes||"-")}</dd>
       <dt>${t("machine")}</dt><dd>${esc(j.machine)}</dd>
       <dt>${t("planDate")}</dt><dd>${fd(j.plan_date)}</dd>
-      <dt>${t("batchQty")}</dt><dd>${nf(j.batch_qty, j.batch_qty%1?2:0)} × ${j.batches}</dd>
+      <dt>${t("batchQty")}</dt><dd>${planText(j)}</dd>
       <dt>${t("total")}</dt><dd>${kg(j.total_planned)}</dd>
      </dl>
    </div>
@@ -835,7 +838,7 @@ function batchForm(j, bts){
     <div class="muted small" style="margin-bottom:8px">${t("perBatchHelp")}</div>
     <label class="f">${t("date")}</label><input type="date" id="b_date" value="${today()}" required>
     <div class="bgrid">${bts.map((b,i)=>`<div class="bcell ${b.mix_kg!=null?"filled":""}"><div class="lab">${esc(JO(b.jo_no))}<span>${i+1} · ${t("bn")} ${esc(b.jo_no)}</span></div>
-      <input type="number" step="0.01" min="0" inputmode="decimal" data-bid="${b.id}" value="${b.mix_kg??""}" placeholder="${nf(j.batch_qty)} KG"></div>`).join("")}</div>
+      <input type="number" step="0.01" min="0" inputmode="decimal" data-bid="${b.id}" value="${b.mix_kg??""}" placeholder="${nf(planQtyAt(j,i))} KG"></div>`).join("")}</div>
     <div class="card" style="padding:10px 12px;margin-top:10px"><div class="row" style="justify-content:space-between"><span class="muted">${t("sum")} (<span id="b_cnt">0</span>/${bts.length})</span><b id="b_tot">-</b></div></div>
     <div id="berr"></div>
     <div class="grid2" style="margin-top:14px"><button type="button" class="btn ghost" id="bc">${t("cancel")}</button><button class="btn primary" id="bs">${t("save")}</button></div></form>`;
@@ -925,7 +928,7 @@ function adminEditForm(j){
     <div class="grid2">${F("product",t("product"))}${F("customer",t("customer"))}</div>
     ${F("item_code",t("itemCode"))}
     <div class="grid2"><div><label class="f">${t("machine")}</label><select id="a_machine">${[...new Set([j.machine,...S.machines.map(m=>m.name)])].map(m=>`<option ${m===j.machine?"selected":""}>${esc(m)}</option>`).join("")}</select></div>${F("plan_date",t("planDate"),"date")}</div>
-    <div class="grid2">${F("batch_qty",t("batchQty"),"number")}${F("batches",t("batches"),"number")}</div>
+    ${Array.isArray(j.batch_plan)&&j.batch_plan.length?`<div class="muted small" style="margin-top:8px">${t("mixedSizes")}: <b>${planText(j)}</b></div>`:`<div class="grid2">${F("batch_qty",t("batchQty"),"number")}${F("batches",t("batches"),"number")}</div>`}
     ${F("total_planned",t("total")+" (KG)","number")}
     <label class="f">${t("joMix")} <span class="muted" id="ed_mix_n"></span></label><div id="ed_mix"></div>
     <label class="f">${t("joPack")} <span class="muted" id="ed_pack_n"></span></label><div id="ed_pack"></div>
@@ -946,7 +949,7 @@ function adminEditForm(j){
     <div id="aerr"></div>
     <div class="grid2" style="margin-top:14px"><button type="button" class="btn ghost" id="ac">${t("cancel")}</button><button class="btn primary" id="as">${t("save")}</button></div></form>`;
   sheet(`${t("adminEdit")} · ${esc(j.job_no)}`, body, "data-wide");
-  const edMix = joEditor($("#ed_mix"), j.jo_mix||[], $("#ed_mix_n"), () => parseInt($("#a_batches").value)||0);
+  const edMix = joEditor($("#ed_mix"), j.jo_mix||[], $("#ed_mix_n"), () => $("#a_batches") ? (parseInt($("#a_batches").value)||0) : j.batches);
   const edPack = joEditor($("#ed_pack"), j.jo_pack||[], $("#ed_pack_n"), () => Math.max((j.jo_pack||[]).length,1));
   const pq=$("#a_pack_qty"), pu=$("#a_pack_uom"), pw=$("#a_pack_unit_kg"), po=$("#a_packing_output");
   const recalc = () => { const q=Number(pq.value), w=Number(pw.value); if(pq.value==="") return; po.value = pu.value==="KG"||!pu.value ? q : (w? Math.round(q*w*100)/100 : po.value); };
@@ -965,6 +968,7 @@ function adminEditForm(j){
       qc_result: dn("qc_result"), date_qc: dn("date_qc"), to_req_no: dn("to_req_no"), date_transferred: dn("date_transferred"), date_done: dn("date_done"), date_closed: dn("date_closed"),
       notes: dn("notes"), remarks: dn("remarks"), wastage_cause: dn("wastage_cause"), wastage_action: dn("wastage_action")
     };
+    if(!$("#a_batch_qty")){ delete row.batch_qty; delete row.batches; }
     if(!bts.length) row.mixing_output = num("mixing_output");
     if(edMix.hasDup() || edPack.hasDup()){ $("#aerr").innerHTML = `<div class="errbox">${t("joDup")}</div>`; $("#as").disabled=false; return; }
     try {
@@ -999,10 +1003,8 @@ function openJobForm(j){
     <label class="f">${t("itemCode")}</label><input type="text" id="j_item" list="dl_i" value="${esc(j?.item_code||"")}" autocapitalize="characters">
     <datalist id="dl_i">${itemCodes.map(c=>`<option value="${esc(c)}">`).join("")}</datalist>
     <div class="muted small" style="margin-top:4px">${t("itemHelp")}</div>
-    <div class="grid2">
-      <div><label class="f">${t("batchQty")}</label><input type="number" id="j_bq" step="0.01" min="0.01" inputmode="decimal" value="${j?.batch_qty??""}" required></div>
-      <div><label class="f">${t("batches")}</label><input type="number" id="j_bt" step="1" min="1" max="99" inputmode="numeric" value="${j?.batches??1}" required></div>
-    </div>
+    <div id="j_lines"></div>
+    <button type="button" class="btn ghost" id="j_addl" style="margin-top:8px;min-height:36px;padding:6px 12px">${t("addSize")}</button>
     <div class="card" style="padding:10px 12px;margin-top:10px"><div class="row" style="justify-content:space-between"><span class="muted">${t("total")}</span><b id="j_total">-</b></div>
       <div class="muted small" id="j_jo" style="margin-top:4px"></div></div>
     <label class="check"><input type="checkbox" id="j_bulk" ${j?.bulk_packing?"checked":""}> ${t("bulk")}</label>
@@ -1013,16 +1015,28 @@ function openJobForm(j){
     <div class="grid2" style="margin-top:12px"><button type="button" class="btn ghost" id="jc">${t("cancel")}</button><button class="btn primary" id="js">${t("save")}</button></div>
   </form>`;
   sheet(isEdit ? `${t("actEdit")} · ${esc(j.job_no)}` : t("newJob"), body);
+  let lines = j ? planLines(j) : [{qty:"", n:1}];
+  const readLines = () => [...document.querySelectorAll("#j_lines .jl")].map(r=>({qty:Number(r.querySelector(".jl_q").value)||0, n:parseInt(r.querySelector(".jl_n").value)||0}));
+  const drawLines = () => {
+    $("#j_lines").innerHTML = lines.map((l,i)=>`<div class="grid2 jl" style="align-items:end;${i?"margin-top:6px":""}">
+      <div><label class="f">${t("batchQty")}${lines.length>1?` <span class="muted">(${i+1})</span>`:""}</label><input type="number" class="jl_q" step="0.01" min="0.01" inputmode="decimal" value="${l.qty||""}" required></div>
+      <div style="display:flex;gap:6px;align-items:end"><div style="flex:1"><label class="f">${t("batches")}</label><input type="number" class="jl_n" step="1" min="1" max="99" inputmode="numeric" value="${l.n||1}" required></div>
+      ${lines.length>1?`<button type="button" class="btn ghost jl_x" data-i="${i}" title="${t("remove")}" style="padding:6px 12px">✕</button>`:""}</div></div>`).join("");
+    document.querySelectorAll("#j_lines input").forEach(x=>x.oninput=()=>{ lines = readLines(); calc(); });
+    document.querySelectorAll("#j_lines .jl_x").forEach(x=>x.onclick=()=>{ lines = readLines(); lines.splice(+x.dataset.i,1); drawLines(); calc(); });
+  };
   const calc = () => {
-    const bq = Number($("#j_bq").value)||0, bt = parseInt($("#j_bt").value)||0;
-    $("#j_total").textContent = bq && bt ? kg(bq*bt) : "-";
+    const L = readLines(), bt = L.reduce((a,l)=>a+l.n,0), tot = L.reduce((a,l)=>a+l.qty*l.n,0);
+    $("#j_total").textContent = tot ? kg(tot) + (L.length>1 ? ` (${L.map(l=>`${nf(l.qty)} × ${l.n}`).join(" + ")})` : "") : "-";
     const bulk = $("#j_bulk").checked, pn = Math.max(parseInt($("#j_pn").value)||1,1);
     $("#j_pnw").classList.toggle("hidden", bulk);
     $("#j_jo").textContent = isEdit
       ? `${t("joMix")}: ${(j.jo_mix||[]).join(", ")}${bt>(j.jo_mix||[]).length?" + "+(bt-(j.jo_mix||[]).length)+" baru/new":""}${bulk?"":` · ${t("joPack")}: ${(j.jo_pack||[]).join(", ")||"-"}${pn>(j.jo_pack||[]).length?" + "+(pn-(j.jo_pack||[]).length)+" baru/new":""}`}`
       : `${t("joAuto")} (${bt||0} ${t("joMix")}${bulk?"":" + "+pn+" "+t("joPack")})`;
   };
-  ["#j_bq","#j_bt","#j_bulk","#j_pn"].forEach(s=>$(s).oninput=calc); $("#j_bulk").onchange=calc; calc();
+  drawLines();
+  $("#j_addl").onclick = () => { lines = readLines(); lines.push({qty:"", n:1}); drawLines(); calc(); const q=document.querySelectorAll("#j_lines .jl_q"); q[q.length-1].focus(); };
+  ["#j_bulk","#j_pn"].forEach(s=>$(s).oninput=calc); $("#j_bulk").onchange=calc; calc();
   const autoItem = () => {
     if($("#j_item").value.trim()) return;
     const pr = $("#j_product").value.trim().toUpperCase(), cu = $("#j_customer").value.trim().toUpperCase(); if(!pr) return;
@@ -1038,10 +1052,12 @@ function openJobForm(j){
     const row = {
       machine: $("#j_machine").value, plan_date: $("#j_date").value,
       product: $("#j_product").value.trim().toUpperCase(), customer: $("#j_customer").value.trim().toUpperCase(), item_code: $("#j_item").value.trim().toUpperCase() || null,
-      batch_qty: Number($("#j_bq").value), batches: parseInt($("#j_bt").value), uom:"KG",
-      total_planned: Number($("#j_bq").value) * parseInt($("#j_bt").value),
+      uom:"KG",
       bulk_packing: $("#j_bulk").checked, notes: $("#j_notes").value.trim() || null
     };
+    { const L = readLines(), bt = L.reduce((a,l)=>a+l.n,0);
+      if(L.some(l=>!(l.qty>0) || !(l.n>=1)) || bt<1 || bt>99){ $("#jerr").innerHTML=`<div class="errbox">${t("batchQty")} / ${t("batches")}: 1 - 99</div>`; $("#js").disabled=false; return; }
+      row.batch_qty = L[0].qty; row.batches = bt; row.total_planned = L.reduce((a,l)=>a+l.qty*l.n,0); row.batch_plan = L.length>1 ? L : null; }
     if(!row.bulk_packing){ const pn = parseInt($("#j_pn").value); if(!(pn>=1 && pn<=20)){ $("#jerr").innerHTML=`<div class="errbox">${t("packJobs")}: 1 - 20</div>`; $("#js").disabled=false; return; } row.pack_jobs = pn; }
     try{
       if(isEdit){ await updateJob(j.id, row); await refreshBatches(j.id); toast(t("saved")); openJob(j.id); }
