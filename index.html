@@ -244,6 +244,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSe
 // ======================= LANGUAGE =======================
 const T = {
  ms:{
+  waitPack:"Menunggu pembungkusan", waitPackHelp:"Adunan siap, belum dibungkus sepenuhnya", daysShort:"hari", qcPend:"QC belum direkod", packJobsN:"JOB pembungkusan", mixedOn:"diadun pada", waitingDays:"Hari menunggu", qcMissing:"Siap / dipindah tanpa keputusan QC", noQcWarn:"Tiada keputusan QC lagi untuk kerja ini.", cmmsRef:"No. rujukan CMMS (arahan kerja / insiden)", cmmsRefPh:"cth. WO-2611-006 atau INC-2611-001",
   appName:"GFB Pengurusan Pengeluaran", login:"Log Masuk", username:"Nama pengguna", password:"Kata laluan", signIn:"Log masuk",
   badLogin:"Nama pengguna atau kata laluan salah.", noAccess:"Akaun ini tiada akses. Hubungi admin.",
   jobs:"Job", dash:"Papan Pemuka", waste:"Pembaziran", more:"Lagi",
@@ -310,6 +311,7 @@ const T = {
   sharedPack:"JOB pembungkusan", c_project:"Projek", c_remark:"Catatan", c_cust:"Pelanggan", c_plan:"Tarikh Pelan", c_rel:"Tarikh Lepas", c_done:"Tarikh Siap", s_plan:"Pelan", s_rel:"Lepas", s_done:"Siap", c_date:"Tarikh", c_machine:"Mesin", c_product:"Produk", c_batch:"Kg × Klpk", c_total:"KG", c_jo:"JOB", c_mix:"Campuran", c_pack:"Bungkus", c_var:"Varians", c_status:"Status", none:"Tiada", today:"Hari ini", lockedPlan:"Pelan dikunci selepas pengeluaran bermula."
  },
  en:{
+  waitPack:"Waiting to pack", waitPackHelp:"Mixing done, not fully packed yet", daysShort:"d", qcPend:"QC pending", packJobsN:"packing JOBs", mixedOn:"mixed on", waitingDays:"Days waiting", qcMissing:"Done / transferred without QC result", noQcWarn:"No QC result recorded for this work yet.", cmmsRef:"CMMS reference (work order / incident no.)", cmmsRefPh:"e.g. WO-2611-006 or INC-2611-001",
   appName:"GFB Production Management", login:"Sign In", username:"Username", password:"Password", signIn:"Sign in",
   badLogin:"Wrong username or password.", noAccess:"This account has no access. Contact the admin.",
   jobs:"Jobs", dash:"Dashboard", waste:"Wastage", more:"More",
@@ -416,6 +418,16 @@ const unexplainedKg = j => { if(!(j.mixing_output>0) || j.packing_output==null |
 const uPct = j => { const u=unexplainedKg(j); return u==null?null:u/j.mixing_output; };
 const overTarget = j => { const u=unexplainedKg(j); return u!=null && Math.abs(u)/j.mixing_output*100 > S.target; };
 const batchesOf = id => S.batches.filter(b=>b.job_id===id).sort((a,b)=>a.seq-b.seq);
+const OPEN_ST = ["PLANNING","RELEASED","IN PROCESS","DONE"];
+const waitPack = j => !j.bulk_packing && j.mixing_output!=null && OPEN_ST.includes(j.status) && (j.packing_output==null || packPending(j));
+const waitKg = j => j.packing_output==null ? Number(j.mixing_output) : (packBal(j)||0);
+const mixDay = j => { const d = batchesOf(j.id).map(b=>b.mix_date).filter(Boolean).sort().pop(); return d || j.date_mixing || null; };
+const waitDays = j => { const d=mixDay(j); return d ? Math.max(0, Math.round((new Date(today()+"T00:00:00Z")-new Date(d+"T00:00:00Z"))/864e5)) : null; };
+const qcPend = j => ["DONE","TRANSFERRED"].includes(j.status) && !j.qc_result;
+const packN = j => (j.jo_pack||[]).length;
+const tags = j => (waitPack(j)?`<span class="badge s-IN_PROCESS" title="${esc(t("waitPackHelp"))}">${t("waitPack")}${waitDays(j)!=null?" · "+waitDays(j)+" "+t("daysShort"):""}</span> `:"")
+  + (qcPend(j)?`<span class="badge flag">${t("qcPend")}</span> `:"")
+  + (packN(j)>1?`<span class="badge s-RELEASED">${packN(j)} ${t("packJobsN")}</span> `:"");
 const JO = x => "JOB-" + x;
 const UOMS = ["KG","PACK","BAG","CARTON"];
 const UOM_SHORT = {KG:"KG",PACK:"PK",BAG:"BAG",CARTON:"CTN"};
@@ -586,7 +598,9 @@ function filteredJobs(){
   const q = S.q.trim().toLowerCase();
   return S.jobs.filter(j => {
     if(S.filter==="ACTIVE" && ["CLOSED","CANCELLED"].includes(j.status)) return false;
-    if(S.filter!=="ACTIVE" && S.filter!=="ALL" && j.status!==S.filter) return false;
+    if(S.filter==="WAITPACK"){ if(!waitPack(j)) return false; }
+    else if(S.filter==="QCPEND"){ if(!qcPend(j)) return false; }
+    else if(S.filter!=="ACTIVE" && S.filter!=="ALL" && j.status!==S.filter) return false;
     if(S.machineF && j.machine!==S.machineF) return false;
     if(q){
       const hay = [j.job_no,j.item_code,j.product,j.customer,j.machine,j.notes,j.remarks,j.to_req_no,...(j.jo_mix||[]).map(x=>JO(x)+" b/n "+x+" bn"+x),...(j.jo_pack||[]).map(JO)].join(" ").toLowerCase();
@@ -599,7 +613,7 @@ function renderJobs(m){
   const counts = {}; S.jobs.forEach(j=>counts[j.status]=(counts[j.status]||0)+1);
   const activeN = S.jobs.filter(j=>!["CLOSED","CANCELLED"].includes(j.status)).length;
   const list = filteredJobs();
-  const chips = [["ACTIVE",t("active"),activeN], ...STATUSES.map(s=>[s,t(s),counts[s]||0]), ["ALL",t("all"),S.jobs.length]];
+  const chips = [["ACTIVE",t("active"),activeN], ["WAITPACK",t("waitPack"),S.jobs.filter(waitPack).length], ["QCPEND",t("qcPend"),S.jobs.filter(qcPend).length], ...STATUSES.map(s=>[s,t(s),counts[s]||0]), ["ALL",t("all"),S.jobs.length]];
   const machines = [...new Set(S.jobs.map(j=>j.machine))].sort();
   const desk = isDesk();
   const shown = desk ? sortJobs(list).slice(0, S.limit*4) : list.slice(0,S.limit);
@@ -649,10 +663,10 @@ function jobTable(rows){
   return `<div class="card tbl-wrap"><table class="jobs"><thead><tr>${COLS.map(([k,l,n])=>`<th data-sort="${k}" class="${n?"n":""}">${esc(t(l))}${arrow(k)}</th>`).join("")}</tr></thead><tbody>
   ${rows.map(j=>{ const v=varPct(j); const ov=overTarget(j);
     return `<tr data-id="${j.id}">
-      <td><b>${esc(j.job_no)}</b><div style="margin-top:3px">${badge(j.status)}</div>${STEP[j.status]>=0?`<div class="steps tsteps" title="${esc(t(j.status))} (${STEP[j.status]+1}/6)">${[0,1,2,3,4,5].map(i=>`<i class="${i<=STEP[j.status]?"on":""}"></i>`).join("")}</div>`:""}</td><td>${fds(j.plan_date)}</td><td>${j.date_released?fds(j.date_released):'<span class="muted">-</span>'}</td><td>${j.date_done?fds(j.date_done):'<span class="muted">-</span>'}</td><td style="white-space:normal;min-width:80px;max-width:110px">${esc(j.machine)}</td>
+      <td><b>${esc(j.job_no)}</b><div style="margin-top:3px">${badge(j.status)}</div>${tags(j)?`<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:3px">${tags(j)}</div>`:""}${STEP[j.status]>=0?`<div class="steps tsteps" title="${esc(t(j.status))} (${STEP[j.status]+1}/6)">${[0,1,2,3,4,5].map(i=>`<i class="${i<=STEP[j.status]?"on":""}"></i>`).join("")}</div>`:""}</td><td>${fds(j.plan_date)}</td><td>${j.date_released?fds(j.date_released):'<span class="muted">-</span>'}</td><td>${j.date_done?fds(j.date_done):'<span class="muted">-</span>'}</td><td style="white-space:normal;min-width:80px;max-width:110px">${esc(j.machine)}</td>
       <td class="wrapc">${esc(j.product)}${j.item_code?`<div class="muted small">${esc(j.item_code)}</div>`:""}</td><td class="wrapc" style="min-width:90px;max-width:140px">${j.customer?esc(j.customer):'<span class="muted">-</span>'}</td><td class="wrapc" style="min-width:60px">${j.notes||j.remarks?`${esc(j.notes||"")}${j.notes&&j.remarks?"<br>":""}${j.remarks?`<span class="muted small">${esc(j.remarks)}</span>`:""}`:'<span class="muted">-</span>'}</td>
       <td class="n"><b>${nf(j.total_planned, j.total_planned%1?2:0)}</b><div class="muted small">${planText(j)}</div></td>
-      <td>${esc(jo(j.jo_mix))}${(j.jo_pack||[]).length?`<div class="muted small">P: ${esc(j.jo_pack.map(JO).join(", "))}</div>`:""}</td>
+      <td>${esc(jo(j.jo_mix))}${packN(j)>1?`<div class="small" style="margin-top:2px"><b>P (${packN(j)}):</b>${j.jo_pack.map((x,i)=>`<div class="muted">${esc(JO(x))}${Array.isArray(j.pack_plan)&&j.pack_plan[i]?" · "+esc(kg(j.pack_plan[i])):""}</div>`).join("")}</div>`:packN(j)?`<div class="muted small">P: ${esc(j.jo_pack.map(JO).join(", "))}</div>`:""}</td>
       <td class="n">${j.mixing_output!=null?nf(j.mixing_output, j.mixing_output%1?2:0):"-"}</td>
       <td class="n">${j.packing_output!=null?(j.pack_uom&&j.pack_uom!=="KG"&&j.pack_qty!=null?`${nf(j.pack_qty, j.pack_qty%1?2:0)} ${UOM_SHORT[j.pack_uom]}<div class="muted small">${nf(j.packing_output, j.packing_output%1?2:0)} KG</div>`:nf(j.packing_output, j.packing_output%1?2:0)):(j.bulk_packing?'<span class="muted small">BULK</span>':"-")}</td>
       <td class="n ${ov&&!j.wastage_cause?"bad-t":""}">${packPending(j)?`<span class="badge s-IN_PROCESS">${t("balShort")} ${nf(packBal(j))}</span>`:(v!=null?pct(v,2):"-")}${ov&&!j.wastage_cause?" !":""}</td>
@@ -664,6 +678,7 @@ function jobCard(j){
   const st = STEP[j.status];
   return `<button class="card job" data-id="${j.id}">
     <div class="top"><span class="no">${esc(j.job_no)}</span>${badge(j.status)}</div>
+    ${tags(j)?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 4px">${tags(j)}</div>`:""}
     <div class="prod">${esc(j.product)}${j.item_code?` <span class="muted small" style="font-weight:500">${esc(j.item_code)}</span>`:""}</div>
     <div class="meta"><span>${t("s_plan")} <b>${fds(j.plan_date)}</b></span><span>${t("s_rel")} <b>${j.date_released?fds(j.date_released):"-"}</b></span><span>${t("s_done")} <b>${j.date_done?fds(j.date_done):"-"}</b></span></div>
     <div class="meta"><span>${esc(j.customer||"-")}</span><span>${esc(j.machine)}</span><span>${planText(j)} = <b>${kg(j.total_planned)}</b></span></div>
@@ -714,7 +729,8 @@ async function openJob(id, keepScroll){
   const bts = batchesOf(j.id);
 
   const body = `
-   <div class="row" style="justify-content:space-between;margin-bottom:8px">${badge(st)}<span class="muted small">${t("created")} ${fdt(j.created_at)}</span></div>
+   <div class="row" style="justify-content:space-between;margin-bottom:8px"><span>${badge(st)} ${tags(j)}</span><span class="muted small">${t("created")} ${fdt(j.created_at)}</span></div>
+   ${waitPack(j)?`<div class="card sec" style="border-left:4px solid var(--warn)"><b>${t("waitPack")}</b>: ${kg(waitKg(j))}${mixDay(j)?` · ${t("mixedOn")} ${fd(mixDay(j))} (${waitDays(j)} ${t("daysShort")})`:""}</div>`:""}
    <div class="card sec">
      <div style="font-size:18px;font-weight:700;margin-bottom:6px">${esc(j.product)}</div>
      <dl class="kv">
@@ -732,7 +748,7 @@ async function openJob(id, keepScroll){
         <tr><td colspan="2"><b>${t("sum")}</b></td><td class="n"><b>${j.mixing_output!=null?nf(j.mixing_output, j.mixing_output%1?2:0):"-"}</b></td><td></td></tr></table>`
       : `<div class="jo">${(j.jo_mix||[]).map(x=>`<span>${esc(JO(x))} <span class="muted">· ${t("bn")} ${esc(x)}</span></span>`).join("")||`<span class="muted">${t("none")}</span>`}</div>
          ${j.mixing_output!=null?`<div class="muted small" style="margin-top:6px">${t("legacyTotal")}</div>`:""}`}
-     <h3 style="margin-top:10px">${t("joPack")}</h3><div class="jo">${(j.jo_pack||[]).map((x,i)=>`<span>${esc(JO(x))}${Array.isArray(j.pack_plan)&&j.pack_plan[i]?` · ${esc(kg(j.pack_plan[i]))}`:""}</span>`).join("")||`<span class="muted">${j.bulk_packing?t("bulk"):t("none")}</span>`}</div></div>
+     <h3 style="margin-top:10px">${t("joPack")}${packN(j)?` (${packN(j)})`:""}</h3><div class="jo">${(j.jo_pack||[]).map((x,i)=>`<span>${esc(JO(x))}${Array.isArray(j.pack_plan)&&j.pack_plan[i]?` · ${esc(kg(j.pack_plan[i]))}`:""}</span>`).join("")||`<span class="muted">${j.bulk_packing?t("bulk"):t("none")}</span>`}</div></div>
    <div class="card sec"><h3>${t("mixing")} & ${t("packing")}</h3>
      <dl class="kv">
       <dt>${t("c_rel")}</dt><dd>${fd(j.date_released)}</dd>
@@ -811,7 +827,7 @@ async function doAction(j, act){
         return await done({status:"DONE"});
       }
       case "reopen": return await done({status:"IN PROCESS"});
-      case "transfer": return formSheet(t("actTransfer"), [
+      case "transfer": if(!j.qc_result) toast(t("noQcWarn"), true); return formSheet(t("actTransfer"), [
           {k:"r",label:t("toReq"),v:j.to_req_no||"",req:true},
           {k:"d",label:t("date"),type:"date",v:j.date_transferred||today(),req:true}],
           v => done({status:"TRANSFERRED", to_req_no:v.r.trim(), date_transferred:v.d}));
@@ -1193,6 +1209,18 @@ function renderDay(m){
   m.querySelectorAll("tr[data-jid]").forEach(r=>r.onclick=()=>openJob(Number(r.dataset.jid)));
   dashWire(m);
 }
+function opsLists(){
+  const wp = S.jobs.filter(waitPack).sort((a,b)=>(waitDays(b)??-1)-(waitDays(a)??-1));
+  const qp = S.jobs.filter(qcPend).sort((a,b)=>String(a.date_done||a.date_packing||"").localeCompare(String(b.date_done||b.date_packing||"")));
+  const wkg = wp.reduce((a,j)=>a+waitKg(j),0);
+  const row = (j,extra) => `<tr data-jid="${j.id}" style="cursor:pointer"><td style="white-space:nowrap"><b>${esc(j.job_no)}</b></td><td>${esc(j.product)}</td><td class="hide-m">${esc(j.machine)}</td>${extra}</tr>`;
+  return `<div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin-top:10px">
+    <div><div class="row" style="justify-content:space-between"><b>${t("waitPack")}</b><button class="chip" data-go="WAITPACK"><b>${wp.length}</b> · ${nf(wkg, wkg%1?1:0)} KG</button></div>
+      ${wp.length?`<div class="scroll-x"><table class="t"><tr><th>${t("c_project")}</th><th>${t("product")}</th><th class="hide-m">${t("machine")}</th><th class="n">KG</th><th class="n">${t("waitingDays")}</th></tr>${wp.slice(0,10).map(j=>row(j,`<td class="n">${nf(waitKg(j), waitKg(j)%1?1:0)}</td><td class="n">${waitDays(j)??"-"}</td>`)).join("")}</table></div>`:`<div class="muted small">${t("none")}</div>`}</div>
+    <div><div class="row" style="justify-content:space-between"><b>${t("qcMissing")}</b><button class="chip" data-go="QCPEND"><b>${qp.length}</b></button></div>
+      ${qp.length?`<div class="scroll-x"><table class="t"><tr><th>${t("c_project")}</th><th>${t("product")}</th><th class="hide-m">${t("machine")}</th><th>${t("c_status")}</th></tr>${qp.slice(0,10).map(j=>row(j,`<td>${badge(j.status)}</td>`)).join("")}</table></div>`:`<div class="muted small">${t("none")}</div>`}</div>
+  </div>`;
+}
 function renderDash(m){
   if(S.dashMode==="day") return renderDay(m);
   if(!S.month) S.month = today().slice(0,7);
@@ -1222,6 +1250,7 @@ function renderDash(m){
    </div>
    <div class="card sec"><h3>${t("liveOps")}</h3>
      <div class="chips" style="flex-wrap:wrap">${STATUSES.filter(s=>s!=="CANCELLED").map(s=>`<button class="chip" data-go="${s}">${badge(s)} <b>${counts[s]||0}</b></button>`).join("")}</div>
+     ${opsLists()}
    </div>
    <div class="card sec"><h3>${t("dailyMonth")} · ${monLabel(S.month)}</h3>
      ${dayBars(monthDays(S.month), d=>String(Number(d.slice(8))))}
@@ -1245,6 +1274,7 @@ function renderDash(m){
    </div>`;
   $("#mon").onchange = e => { S.month = e.target.value; renderDash(m); };
   m.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{ S.tab="jobs"; S.filter=b.dataset.go; render(); });
+  m.querySelectorAll("tr[data-jid]").forEach(r=>r.onclick=()=>openJob(Number(r.dataset.jid)));
   dashWire(m);
 }
 
@@ -1346,6 +1376,7 @@ async function openLoss(id){
      <dt>${t("stage")}</dt><dd>${esc(t(l.stage))}</dd>
      <dt>Job</dt><dd>${j?`<a href="#" id="toJob">${esc(j.job_no)}</a> · ${esc(j.product)}`:"-"}</dd>
      ${l.batch_no?`<dt>${t("bn")}</dt><dd>${esc(l.batch_no)} (${esc(JO(l.batch_no))})</dd>`:""}
+     ${l.cmms_ref?`<dt>${t("cmmsRef")}</dt><dd>${esc(l.cmms_ref)}</dd>`:""}
      <dt>${t("reporter")}</dt><dd>${esc(l.reporter_name||"-")}</dd>
     </dl></div>
    <div class="card sec"><h3>${t("whatHappened")}</h3><div style="white-space:pre-wrap">${esc(l.description)}</div>
@@ -1410,6 +1441,7 @@ function openLossForm(l, jobId){
     </div>
     <label class="f">${t("whatHappened")}</label><textarea id="l_desc" required>${esc(isEdit?l.description:"")}</textarea>
     <label class="f">${t("immAction")}</label><textarea id="l_act">${esc(isEdit?(l.immediate_action||""):"")}</textarea>
+    <label class="f">${t("cmmsRef")}</label><input type="text" id="l_cmms" maxlength="60" placeholder="${esc(t("cmmsRefPh"))}" value="${esc(isEdit?(l.cmms_ref||""):"")}">
     <label class="f">${t("photos")} ${isEdit&&l.photo_paths?.length?`<span class="muted">(${l.photo_paths.length} ✓)</span>`:""}</label>
     <input type="file" id="l_ph" accept="image/*" capture="environment" multiple style="min-height:auto;padding:8px">
     <div class="muted small" id="l_phn" style="margin-top:4px"></div>
@@ -1442,7 +1474,8 @@ function openLossForm(l, jobId){
         stage: $("#l_stage").value, loss_type: $("#l_type").value,
         material: $("#l_mat").value.trim().toUpperCase(), qty_kg: Number($("#l_qty").value),
         occurred_at: new Date($("#l_time").value + ":00+08:00").toISOString(),
-        description: $("#l_desc").value.trim(), immediate_action: $("#l_act").value.trim() || null, photo_paths: paths
+        description: $("#l_desc").value.trim(), immediate_action: $("#l_act").value.trim() || null, photo_paths: paths,
+        cmms_ref: $("#l_cmms").value.trim().toUpperCase() || null
       };
       const q = isEdit ? sb.from("loss_reports").update(row).eq("id", l.id) : sb.from("loss_reports").insert(row);
       const { data, error } = await q.select().single(); if(error) throw error;
@@ -1451,7 +1484,7 @@ function openLossForm(l, jobId){
   };
 }
 function exportLossCsv(list){
-  const cols = ["report_no","occurred_at","job_no","batch_no","stage","loss_type","material","qty_kg","description","immediate_action","reporter_name","disposition","corrective_action","disposition_name","disposition_at","status","photos"];
+  const cols = ["report_no","occurred_at","job_no","batch_no","stage","loss_type","material","qty_kg","description","immediate_action","cmms_ref","reporter_name","disposition","corrective_action","disposition_name","disposition_at","status","photos"];
   const rows = [...list].sort((a,b)=>a.id-b.id).map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id);
     const o = {...l, occurred_at: fdt(l.occurred_at), disposition_at: l.disposition_at?fdt(l.disposition_at):"", job_no: j?j.job_no:"", photos:(l.photo_paths||[]).length, stage:t(l.stage), loss_type:t(l.loss_type), disposition:l.disposition?t(l.disposition):""};
     return cols.map(c=>{ let v=o[c]??""; v=String(v); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; }).join(","); });
