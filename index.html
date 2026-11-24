@@ -299,7 +299,7 @@ const T = {
   KG:"KG", PACK:"Pek", BAG:"Beg", CARTON:"Karton",
   guide:"Panduan Pengguna", expandAll:"Buka / tutup semua", print:"Cetak", guideIntro:"Bahagian untuk peranan anda dibuka dahulu. Peranan anda:",
   loss:"Kerugian", lossTitle:"Laporan Kerugian Pengeluaran", reportLoss:"Lapor Kerugian", lossNo:"No. Laporan", occurred:"Masa kejadian",
-  stage:"Peringkat", lossType:"Jenis kerugian", material:"Bahan / produk", qtyLost:"Kuantiti hilang (KG)", whatHappened:"Apa yang berlaku",
+  stage:"Peringkat", lossType:"Jenis kerugian", material:"Bahan / produk", qtyLost:"Kuantiti hilang", whatHappened:"Apa yang berlaku",
   immAction:"Tindakan segera", photos:"Gambar", addPhoto:"Ambil / pilih gambar", reporter:"Dilapor oleh", noJob:"- Tiada job (cth. bahan mentah di stor) -",
   disposition:"Keputusan bahan", corrective:"Tindakan pembetulan", signOff:"Tandatangan keputusan", signedBy:"Ditandatangani oleh",
   closeReport:"Tutup laporan selepas simpan", OPEN:"Terbuka", lossesLinked:"Laporan kerugian", unexplained:"Varians tidak dijelaskan",
@@ -366,7 +366,7 @@ const T = {
   KG:"KG", PACK:"Pack", BAG:"Bag", CARTON:"Carton",
   guide:"User Guide", expandAll:"Expand / collapse all", print:"Print", guideIntro:"Sections for your role are opened first. Your role:",
   loss:"Losses", lossTitle:"Production Loss Reports", reportLoss:"Report Loss", lossNo:"Report No.", occurred:"Time of incident",
-  stage:"Stage", lossType:"Type of loss", material:"Material / product", qtyLost:"Quantity lost (KG)", whatHappened:"What happened",
+  stage:"Stage", lossType:"Type of loss", material:"Material / product", qtyLost:"Quantity lost", whatHappened:"What happened",
   immAction:"Immediate action", photos:"Photos", addPhoto:"Take / choose photos", reporter:"Reported by", noJob:"- No job (e.g. raw material in store) -",
   disposition:"Disposition", corrective:"Corrective action", signOff:"Sign off disposition", signedBy:"Signed off by",
   closeReport:"Close report after saving", OPEN:"Open", lossesLinked:"Loss reports", unexplained:"Unexplained variance",
@@ -413,7 +413,12 @@ const packBal = j => packPending(j) && j.mixing_output!=null ? Math.max(Number(j
 const varPct = j => (j.mixing_output>0 && j.packing_output!=null && !packPending(j)) ? (j.mixing_output - j.packing_output)/j.mixing_output : null;
 const outputOf = j => j.packing_output!=null ? Number(j.packing_output) : (j.bulk_packing && j.mixing_output!=null ? Number(j.mixing_output) : null);
 const outputDate = j => j.packing_output!=null ? j.date_packing : (j.bulk_packing ? j.date_mixing : null);
-const jobLoss = id => S.losses.filter(l=>l.job_id===id && ["MIXING","PACKING"].includes(l.stage)).reduce((a,l)=>a+Number(l.qty_kg),0);
+const LOSS_UOM = ["KG","G","PCS","PKT","ROLL","CTN","BAG","L","MTR"];
+const lUom = l => (l.uom||"KG").toUpperCase();
+const lKg = l => { const q=Number(l.qty_kg)||0, u=lUom(l); return u==="KG"?q:u==="G"?q/1000:0; };
+const lQty = l => { const q=Number(l.qty_kg)||0; return nf(q, q%1?2:0)+" "+lUom(l); };
+const otherUnits = ls => { const o={}; ls.forEach(l=>{const u=lUom(l); if(u!=="KG"&&u!=="G") o[u]=(o[u]||0)+(Number(l.qty_kg)||0);}); return Object.entries(o).map(([u,q])=>nf(q,q%1?2:0)+" "+u).join(", "); };
+const jobLoss = id => S.losses.filter(l=>l.job_id===id && ["MIXING","PACKING"].includes(l.stage)).reduce((a,l)=>a+lKg(l),0);
 const unexplainedKg = j => { if(!(j.mixing_output>0) || j.packing_output==null || packPending(j)) return null; const v=j.mixing_output-j.packing_output; return v>0 ? Math.max(v - jobLoss(j.id), 0) : v; };
 const uPct = j => { const u=unexplainedKg(j); return u==null?null:u/j.mixing_output; };
 const overTarget = j => { const u=unexplainedKg(j); return u!=null && Math.abs(u)/j.mixing_output*100 > S.target; };
@@ -766,7 +771,7 @@ async function openJob(id, keepScroll){
      ${overTarget(j)?`<div class="${j.wastage_cause?"warnbox":"errbox"}" style="margin-top:10px">${j.wastage_cause?`<b>${t("cause")}:</b> ${esc(j.wastage_cause)}<br><b>${t("action")}:</b> ${esc(j.wastage_action||"-")}${j.wastage_verified_by?`<br><b>${t("verifiedBy")}:</b> ${esc(j.wastage_verified_by)} (${fd(j.wastage_verified_date)})`:""}`:t("overTarget")}</div>`:""}
    </div>
    ${acts.length?`<div class="actions">${acts.map(([k,l,c])=>`<button class="btn block ${c}" data-act="${k}">${esc(l)}</button>`).join("")}</div>`:""}
-   ${jl.length?`<div class="card sec" style="margin-top:12px"><h3>${t("lossesLinked")} (${jl.length})</h3>${jl.map(l=>`<div class="listitem" style="padding:8px 0;cursor:pointer" data-loss="${l.id}"><div class="grow"><b>${esc(l.report_no)}</b> · ${esc(t(l.loss_type))} · ${esc(t(l.stage))}<div class="muted small">${fdt(l.occurred_at)} · ${esc(l.reporter_name||"")}</div></div><b>${kg(l.qty_kg)}</b></div>`).join("")}</div>`:""}
+   ${jl.length?`<div class="card sec" style="margin-top:12px"><h3>${t("lossesLinked")} (${jl.length})</h3>${jl.map(l=>`<div class="listitem" style="padding:8px 0;cursor:pointer" data-loss="${l.id}"><div class="grow"><b>${esc(l.report_no)}</b> · ${esc(t(l.loss_type))} · ${esc(t(l.stage))}<div class="muted small">${fdt(l.occurred_at)} · ${esc(l.reporter_name||"")}</div></div><b>${esc(lQty(l))}</b></div>`).join("")}</div>`:""}
    <div class="card sec" style="margin-top:12px"><h3>${t("history")}</h3><div class="hist" id="hist"><span class="muted">${t("loading")}</span></div></div>`;
   const bg = sheet(`${esc(j.job_no)}`, body, `data-job="${j.id}"`);
   if(prevScroll) bg.querySelector(".sheet").scrollTop = prevScroll;
@@ -1169,7 +1174,7 @@ function dayStats(d){
   return { mixed, mixN, out, outJobs,
     done: S.jobs.filter(j=>j.date_done===d), released: S.jobs.filter(j=>j.date_released===d),
     transferred: S.jobs.filter(j=>j.date_transferred===d), planned: S.jobs.filter(j=>j.plan_date===d && j.status!=="CANCELLED"),
-    waste: ms ? vs/ms : null, losses, lossKg: losses.reduce((a,l)=>a+Number(l.qty_kg),0) };
+    waste: ms ? vs/ms : null, losses, lossKg: losses.reduce((a,l)=>a+lKg(l),0), lossOther: otherUnits(losses) };
 }
 function dayBars(days, label){
   const st = days.map(d=>({d, ...dayStats(d)}));
@@ -1194,7 +1199,7 @@ function renderDay(m){
      <div class="card kpi"><div class="l">${t("mixedKg")}</div><div class="v">${nf(st.mixed, st.mixed%1?1:0)}</div><div class="s">KG · ${st.mixN} ${t("batchesN")}</div></div>
      <div class="card kpi"><div class="l">${t("packed")}</div><div class="v">${nf(st.out, st.out%1?1:0)}</div><div class="s">KG · ${st.outJobs.length} ${t("jobsN")}</div></div>
      <div class="card kpi"><div class="l">${t("doneJobs")}</div><div class="v">${st.done.length}</div><div class="s">${t("releasedDay")}: ${st.released.length} · ${t("transferredDay")}: ${st.transferred.length}</div></div>
-     <div class="card kpi"><div class="l">${t("wasteRate")}</div><div class="v" style="${st.waste!=null&&st.waste*100>S.target?"color:var(--bad)":""}">${pct(st.waste,2)}</div><div class="s">${t("lossesDay")}: ${st.losses.length} (${nf(st.lossKg, st.lossKg%1?1:0)} KG)</div></div>
+     <div class="card kpi"><div class="l">${t("wasteRate")}</div><div class="v" style="${st.waste!=null&&st.waste*100>S.target?"color:var(--bad)":""}">${pct(st.waste,2)}</div><div class="s">${t("lossesDay")}: ${st.losses.length} (${nf(st.lossKg, st.lossKg%1?1:0)} KG${st.lossOther?" + "+esc(st.lossOther):""})</div></div>
    </div>
    <div class="card sec"><h3>${t("trend14")}</h3>
      ${dayBars(last14, (x,i)=> (i===0 || x.slice(8)==="01") ? `${Number(x.slice(8))}/${Number(x.slice(5,7))}` : String(Number(x.slice(8))))}
@@ -1315,13 +1320,13 @@ function renderWaste(m){
 function lossSummary(packedJobs){
   const lm = S.losses.filter(l=>toMY(l.occurred_at).slice(0,7)===S.month);
   if(!lm.length) return "";
-  const tot = lm.reduce((a,l)=>a+Number(l.qty_kg),0);
-  const group = key => { const o={}; lm.forEach(l=>{ o[l[key]]=(o[l[key]]||0)+Number(l.qty_kg); }); return Object.entries(o).sort((a,b)=>b[1]-a[1]); };
+  const tot = lm.reduce((a,l)=>a+lKg(l),0), oth = otherUnits(lm);
+  const group = key => { const o={}; lm.filter(l=>lKg(l)>0).forEach(l=>{ o[l[key]]=(o[l[key]]||0)+lKg(l); }); return Object.entries(o).sort((a,b)=>b[1]-a[1]); };
   const bt = group("loss_type"), bs = group("stage"); const mx = Math.max(1, ...bt.map(x=>x[1]), ...bs.map(x=>x[1]));
   const pos = packedJobs.reduce((a,j)=>a+Math.max(j.mixing_output-j.packing_output,0),0);
   const expl = packedJobs.reduce((a,j)=>a+Math.min(Math.max(j.mixing_output-j.packing_output,0), jobLoss(j.id)),0);
   const bars = rows => rows.map(([k,v])=>`<div class="bar"><div class="lbl"><span>${esc(t(k))}</span><span class="muted">${nf(v, v%1?2:0)} KG</span></div><div class="trk"><div class="fill" style="width:${v/mx*100}%;background:var(--warn)"></div></div></div>`).join("");
-  return `<div class="card sec"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><h3 style="margin:0">${t("lossMonth")}: ${nf(tot, tot%1?2:0)} KG (${lm.length})</h3>
+  return `<div class="card sec"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><h3 style="margin:0">${t("lossMonth")}: ${nf(tot, tot%1?2:0)} KG${oth?" + "+esc(oth):""} (${lm.length})</h3>
      ${pos?`<span class="small">${t("explained")}: <b>${nf(expl,1)}</b> / ${nf(pos,1)} KG (${pct(expl/pos,0)})</span>`:""}</div>
      <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:10px">
        <div><div class="muted small" style="margin-bottom:6px">${t("lossByType")}</div><div class="bars">${bars(bt)}</div></div>
@@ -1334,7 +1339,7 @@ function renderLoss(m){
   const months = [...new Set([today().slice(0,7), ...monthsAvailable(), ...S.losses.map(l=>toMY(l.occurred_at).slice(0,7))])].sort().reverse();
   const inMonth = S.losses.filter(l=>toMY(l.occurred_at).slice(0,7)===S.month);
   const list = (S.lossF==="OPEN" ? S.losses.filter(l=>l.status==="OPEN") : S.lossF==="MONTH" ? inMonth : S.losses);
-  const total = inMonth.reduce((a,l)=>a+Number(l.qty_kg),0);
+  const total = inMonth.reduce((a,l)=>a+lKg(l),0), totalOther = otherUnits(inMonth);
   const openN = S.losses.filter(l=>l.status==="OPEN").length;
   const desk = isDesk();
   m.innerHTML = `
@@ -1343,17 +1348,17 @@ function renderLoss(m){
      ${desk?`<button class="btn ghost" id="lcsv">${t("exportCsv")}</button>`:""}
      ${perm("loss_report")?`<button class="btn primary" id="newL">+ ${t("reportLoss")}</button>`:""}</div>
    <div class="kpis">
-     <div class="card kpi"><div class="l">${t("lossMonth")}</div><div class="v">${nf(total, total%1?2:0)}</div><div class="s">KG · ${inMonth.length}</div></div>
+     <div class="card kpi"><div class="l">${t("lossMonth")}</div><div class="v">${nf(total, total%1?2:0)}</div><div class="s">KG${totalOther?" + "+esc(totalOther):""} · ${inMonth.length}</div></div>
      <div class="card kpi"><div class="l">${t("OPEN")}</div><div class="v" style="${openN?"color:var(--warn)":""}">${openN}</div><div class="s">${t("dispHelp").split(".")[0]}</div></div>
    </div>
    <div class="chips">${[["OPEN",t("OPEN"),openN],["MONTH",monLabel(S.month),inMonth.length],["ALL",t("all"),S.losses.length]].map(([k,l,n])=>`<button class="chip ${S.lossF===k?"on":""}" data-f="${k}">${esc(l)}<b>${n}</b></button>`).join("")}</div>
    ${!list.length?`<div class="card empty">${t("noData")}</div>` : desk ? `<div class="card tbl-wrap"><table class="jobs"><thead><tr>
-      <th>${t("lossNo")}</th><th>${t("occurred")}</th><th>Job</th><th>${t("stage")}</th><th>${t("lossType")}</th><th>${t("material")}</th><th class="n">KG</th><th>${t("disposition")}</th><th>${t("reporter")}</th><th>Status</th></tr></thead><tbody>
-      ${list.map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id); return `<tr data-lid="${l.id}"><td><b>${esc(l.report_no)}</b></td><td>${fdt(l.occurred_at)}</td><td>${j?esc(j.job_no):"-"}${l.batch_no?`<div class="muted small">B/N ${esc(l.batch_no)}</div>`:""}</td><td>${esc(t(l.stage))}</td><td>${esc(t(l.loss_type))}</td><td class="wrapc">${esc(l.material)}</td><td class="n"><b>${nf(l.qty_kg, l.qty_kg%1?2:0)}</b></td><td>${l.disposition?esc(t(l.disposition)):"-"}</td><td>${esc(l.reporter_name||"")}</td><td><span class="badge ${l.status==="OPEN"?"s-IN_PROCESS":"s-CLOSED"}">${t(l.status)}</span></td></tr>`; }).join("")}
+      <th>${t("lossNo")}</th><th>${t("occurred")}</th><th>Job</th><th>${t("stage")}</th><th>${t("lossType")}</th><th>${t("material")}</th><th class="n">${t("qtyLost")}</th><th>${t("disposition")}</th><th>${t("reporter")}</th><th>Status</th></tr></thead><tbody>
+      ${list.map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id); return `<tr data-lid="${l.id}"><td><b>${esc(l.report_no)}</b></td><td>${fdt(l.occurred_at)}</td><td>${j?esc(j.job_no):"-"}${l.batch_no?`<div class="muted small">B/N ${esc(l.batch_no)}</div>`:""}</td><td>${esc(t(l.stage))}</td><td>${esc(t(l.loss_type))}</td><td class="wrapc">${esc(l.material)}</td><td class="n"><b>${esc(lQty(l))}</b></td><td>${l.disposition?esc(t(l.disposition)):"-"}</td><td>${esc(l.reporter_name||"")}</td><td><span class="badge ${l.status==="OPEN"?"s-IN_PROCESS":"s-CLOSED"}">${t(l.status)}</span></td></tr>`; }).join("")}
      </tbody></table></div>`
    : `<div class="joblist">${list.map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id); return `<button class="card job" data-lid="${l.id}">
       <div class="top"><span class="no">${esc(l.report_no)} · ${fdt(l.occurred_at)}</span><span class="badge ${l.status==="OPEN"?"s-IN_PROCESS":"s-CLOSED"}">${t(l.status)}</span></div>
-      <div class="prod">${esc(t(l.loss_type))} · ${kg(l.qty_kg)}</div>
+      <div class="prod">${esc(t(l.loss_type))} · ${esc(lQty(l))}</div>
       <div class="meta"><span>${esc(l.material)}</span><span>${esc(t(l.stage))}</span>${j?`<span>${esc(j.job_no)}</span>`:""}${l.photo_paths?.length?`<span>📷 ${l.photo_paths.length}</span>`:""}</div></button>`; }).join("")}</div>`}`;
   $("#mon").onchange = e => { S.month = e.target.value; S.lossF="MONTH"; renderLoss(m); };
   m.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{ S.lossF=c.dataset.f; renderLoss(m); });
@@ -1370,7 +1375,7 @@ async function openLoss(id){
   const canEdit = (l.status==="OPEN" && ((l.reported_by===S.me.user_id && perm("loss_report")) || canSign)) || can("admin");
   const body = `
    <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="badge ${l.status==="OPEN"?"s-IN_PROCESS":"s-CLOSED"}">${t(l.status)}</span><span class="muted small">${fdt(l.occurred_at)}</span></div>
-   <div class="card sec"><div style="font-size:18px;font-weight:700;margin-bottom:6px">${esc(t(l.loss_type))} · ${kg(l.qty_kg)}</div>
+   <div class="card sec"><div style="font-size:18px;font-weight:700;margin-bottom:6px">${esc(t(l.loss_type))} · ${esc(lQty(l))}</div>
     <dl class="kv">
      <dt>${t("material")}</dt><dd>${esc(l.material)}</dd>
      <dt>${t("stage")}</dt><dd>${esc(t(l.stage))}</dd>
@@ -1436,7 +1441,7 @@ function openLossForm(l, jobId){
     </div>
     <label class="f">${t("material")}</label><input type="text" id="l_mat" value="${esc(isEdit?l.material:(pj?.product||""))}" required>
     <div class="grid2">
-      <div><label class="f">${t("qtyLost")}</label><input type="number" id="l_qty" step="0.01" min="0.01" inputmode="decimal" value="${isEdit?l.qty_kg:""}" required></div>
+      <div><label class="f">${t("qtyLost")}</label><div style="display:flex;gap:6px"><input type="number" id="l_qty" step="0.001" min="0.001" inputmode="decimal" value="${isEdit?l.qty_kg:""}" required style="flex:1;min-width:0"><select id="l_uom" style="width:auto" aria-label="${esc(t("uom"))}">${[...new Set([...LOSS_UOM, isEdit?lUom(l):"KG"])].map(u=>`<option${(isEdit?lUom(l):"KG")===u?" selected":""}>${u}</option>`).join("")}</select></div></div>
       <div><label class="f">${t("occurred")}</label><input type="datetime-local" id="l_time" value="${nowLocal}" required></div>
     </div>
     <label class="f">${t("whatHappened")}</label><textarea id="l_desc" required>${esc(isEdit?l.description:"")}</textarea>
@@ -1472,7 +1477,7 @@ function openLossForm(l, jobId){
       const row = {
         job_id: $("#l_job").value ? Number($("#l_job").value) : null, batch_no: $("#l_bn").value || null,
         stage: $("#l_stage").value, loss_type: $("#l_type").value,
-        material: $("#l_mat").value.trim().toUpperCase(), qty_kg: Number($("#l_qty").value),
+        material: $("#l_mat").value.trim().toUpperCase(), qty_kg: Number($("#l_qty").value), uom: $("#l_uom").value,
         occurred_at: new Date($("#l_time").value + ":00+08:00").toISOString(),
         description: $("#l_desc").value.trim(), immediate_action: $("#l_act").value.trim() || null, photo_paths: paths,
         cmms_ref: $("#l_cmms").value.trim().toUpperCase() || null
@@ -1484,7 +1489,7 @@ function openLossForm(l, jobId){
   };
 }
 function exportLossCsv(list){
-  const cols = ["report_no","occurred_at","job_no","batch_no","stage","loss_type","material","qty_kg","description","immediate_action","cmms_ref","reporter_name","disposition","corrective_action","disposition_name","disposition_at","status","photos"];
+  const cols = ["report_no","occurred_at","job_no","batch_no","stage","loss_type","material","qty_kg","uom","description","immediate_action","cmms_ref","reporter_name","disposition","corrective_action","disposition_name","disposition_at","status","photos"];
   const rows = [...list].sort((a,b)=>a.id-b.id).map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id);
     const o = {...l, occurred_at: fdt(l.occurred_at), disposition_at: l.disposition_at?fdt(l.disposition_at):"", job_no: j?j.job_no:"", photos:(l.photo_paths||[]).length, stage:t(l.stage), loss_type:t(l.loss_type), disposition:l.disposition?t(l.disposition):""};
     return cols.map(c=>{ let v=o[c]??""; v=String(v); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; }).join(","); });

@@ -32,6 +32,12 @@ with sync_playwright() as p:
         if tag=='desk':
             pg.evaluate("openLossForm(null,1)");pg.wait_for_timeout(500)
             pg.fill('#l_qty','5');pg.fill('#l_desc','Film jam');pg.fill('#l_cmms','wo-2611-006');pg.click('#ls');pg.wait_for_timeout(800)
-            ok('loss report CMMS ref',pg.evaluate("__T.loss_reports.map(l=>l.cmms_ref).join()")=='WO-2611-006')
+            ok('loss report CMMS ref',pg.evaluate("__T.loss_reports.filter(l=>l.cmms_ref).map(l=>l.cmms_ref).join()")=='WO-2611-006')
+            ok('new loss default unit KG',pg.evaluate("__T.loss_reports.slice(-1)[0].uom")=='KG')
+            pg.evaluate("openLossForm(null,1)");pg.wait_for_timeout(400);pg.fill('#l_qty','40');pg.select_option('#l_uom','PCS');pg.fill('#l_desc','Torn pouches');pg.click('#ls');pg.wait_for_timeout(800)
+            ok('loss saved in PCS',pg.evaluate("__T.loss_reports.slice(-1)[0].uom")=='PCS')
+            pg.evaluate("closeSheet&&closeSheet();S.tab='loss';S.lossF='MONTH';render()");pg.wait_for_timeout(500)
+            txt=pg.inner_text('#app');ok('loss month total 8 KG + other units','8 KG' in txt.replace('\n',' ') or '8\nKG' in txt,txt[:0]);ok('other units listed','2 ROLL' in txt and '40 PCS' in txt)
+            pg.screenshot(path=os.path.join(HERE,'out','loss_uom.png'),full_page=True)
         print(tag,'errors',errs);ctx.close()
 for r in res:print(*r)

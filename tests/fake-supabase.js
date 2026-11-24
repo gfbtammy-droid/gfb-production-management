@@ -13,7 +13,10 @@ const T={
   job(7,{status:"IN PROCESS",bulk_packing:true,mixing_output:300,date_mixing:dd(2),jo_pack:[]}),
   job(8,{status:"CLOSED",mixing_output:200,packing_output:null})],
  job_batches:[{id:1,job_id:1,jo_no:"5002",seq:1,mix_kg:100,mix_date:dd(4)},{id:2,job_id:1,jo_no:"5003",seq:2,mix_kg:100,mix_date:dd(3)}],
- loss_reports:[], machines:[{id:1,name:"AUTOPACK 1",active:true,sort_order:1}], app_settings:[],
+ loss_reports:[
+  {id:51,report_no:"LOSS-0051",occurred_at:new Date().toISOString(),job_id:1,stage:"PACKING",loss_type:"SPILLAGE",material:"POWDER",qty_kg:2.5,uom:"KG",status:"OPEN",reporter_name:"Demo"},
+  {id:52,report_no:"LOSS-0052",occurred_at:new Date().toISOString(),job_id:1,stage:"PACKING",loss_type:"SPILLAGE",material:"POWDER",qty_kg:500,uom:"G",status:"OPEN",reporter_name:"Demo"},
+  {id:53,report_no:"LOSS-0053",occurred_at:new Date().toISOString(),job_id:2,stage:"PACKING",loss_type:"PACKAGING",material:"LAMINATED FILM",qty_kg:2,uom:"ROLL",status:"OPEN",reporter_name:"Demo"}], machines:[{id:1,name:"AUTOPACK 1",active:true,sort_order:1}], app_settings:[],
  role_permissions:[], app_users:[{user_id:"u1",active:true,username:"admin",full_name:"Demo Admin",role:"admin"}], access_log:[]};
 let nid=100;
 function Q(tb){this.tb=tb;this.f=[];this.op="select";this.row=null;this.one=false;this.mode=null}
