@@ -21,7 +21,7 @@ with sync_playwright() as p:
             pg.evaluate("openLossForm(null,1)");pg.wait_for_timeout(500)
             pg.select_option('#l_type','WASTAGE');pg.fill('#l_bn','20132');pg.fill('#l_item','WIP0021');pg.fill('#l_mat','Belgium Chocolate (KN-PHs4-FN)')
             pg.fill('#l_qty','11.83');pg.fill('#l_bq','502');pg.fill('#l_cq','490');pg.fill('#l_trans','434621');pg.fill('#l_loc','IBC Area')
-            pg.fill('#l_desc','WIP leak from butterfly valve');pg.fill('#l_reason','The lock is loose');pg.fill('#l_act','Replace butterfly valve');pg.click('#ls');pg.wait_for_timeout(800)
+            pg.fill('#l_desc','WIP leak from butterfly valve');pg.fill('#l_reason','The lock is loose');pg.fill('#l_act','Replace butterfly valve');pg.select_option('#l_chk','u2');pg.click('#ls');pg.wait_for_timeout(800)
             r=pg.evaluate("__T.loss_reports.slice(-1)[0]")
             ok('new fields saved',r.get('trans_no')=='434621' and r.get('batch_qty')==502 and r.get('completed_qty')==490 and r.get('reason')=='The lock is loose' and r.get('item_code')=='WIP0021' and r.get('batch_no')=='20132',r)
             pg.evaluate("closeSheet&&closeSheet()")

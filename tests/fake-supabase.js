@@ -17,7 +17,7 @@ const T={
   {id:51,report_no:"LOSS-0051",occurred_at:new Date().toISOString(),job_id:1,stage:"PACKING",loss_type:"SPILLAGE",material:"POWDER",qty_kg:2.5,uom:"KG",status:"OPEN",reporter_name:"Demo"},
   {id:52,report_no:"LOSS-0052",occurred_at:new Date().toISOString(),job_id:1,stage:"PACKING",loss_type:"SPILLAGE",material:"POWDER",qty_kg:500,uom:"G",status:"OPEN",reporter_name:"Demo"},
   {id:53,report_no:"LOSS-0053",occurred_at:new Date().toISOString(),job_id:2,stage:"PACKING",loss_type:"PACKAGING",material:"LAMINATED FILM",qty_kg:2,uom:"ROLL",status:"OPEN",reporter_name:"Demo"}], machines:[{id:1,name:"AUTOPACK 1",active:true,sort_order:1}], app_settings:[],
- role_permissions:[], app_users:[{user_id:"u1",active:true,username:"admin",full_name:"Demo Admin",role:"admin"}], access_log:[]};
+ role_permissions:[], app_users:[{user_id:"u1",active:true,username:"admin",full_name:"Demo Admin",role:"admin",notify_email:"admin@test.example"},{user_id:"u2",active:true,username:"production",full_name:"Production Sup",role:"supervisor",notify_email:"prod@test.example"},{user_id:"u3",active:true,username:"inventory",full_name:"Inventory Ctrl",role:"operation"}], access_log:[]};
 let nid=100;
 function Q(tb){this.tb=tb;this.f=[];this.op="select";this.row=null;this.one=false;this.mode=null}
 Q.prototype.select=function(){return this};Q.prototype.order=function(){return this};Q.prototype.limit=function(){return this};

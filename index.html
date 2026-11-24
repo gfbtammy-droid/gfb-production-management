@@ -223,6 +223,10 @@ details.guide .gbody ul,details.guide .gbody ol{margin:6px 0;padding-left:20px}
 details.guide .gbody li{margin:4px 0}
 .steps-g{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
 .print-only{display:none}
+.lsteps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.lstep{border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
+.lstep.done{border-color:var(--ok);background:var(--ok-soft)}
+.lstep.wait{border-color:var(--warn);background:#fff7e6}
 #printDoc{display:none}
 @media print{
   @page f60{size:A4 landscape;margin:14mm 8mm 9mm}
@@ -323,13 +327,13 @@ const T = {
   legacyTotal:"Job lama: output direkod sebagai jumlah sahaja.", joList:"Nombor JOB (asingkan dengan ruang)", batchOpt:"- Semua / tidak pasti -",
   KG:"KG", PACK:"Pek", BAG:"Beg", CARTON:"Karton",
   guide:"Panduan Pengguna", expandAll:"Buka / tutup semua", print:"Cetak", guideIntro:"Bahagian untuk peranan anda dibuka dahulu. Peranan anda:",
-  loss:"Kerugian", lossTitle:"Laporan Kerugian Pengeluaran", reportLoss:"Lapor Kerugian", lossNo:"No. Laporan", l_item:"Kod item", l_bqty:"Kuantiti asal (KG)", l_cqty:"Kuantiti siap (KG)", l_trans:"No. transaksi (Misc Issue)", l_loc:"Lokasi", l_reason:"Sebab / punca", l_bnHelp:"Pilih B/N job, atau taip no. batch bahan mentah.", formHdr:"Borang laporan pembaziran (ISO)", formNo:"No. borang", formRev:"Revisi", formEff:"Tarikh berkuat kuasa", printPdf:"Cetak / PDF", lossTitle1:"Laporan Kerugian Pengeluaran", sumTotal:"Jumlah", printedOn:"Dicetak", verifiedBy:"Disahkan oleh", occurred:"Masa kejadian",
+  loss:"Kerugian", lossTitle:"Laporan Kerugian Pengeluaran", reportLoss:"Lapor Kerugian", lossNo:"No. Laporan", CHECKED:"Disemak", escCheck:"Hantar untuk semakan kepada (Checked by)", escVerify:"Hantar untuk pengesahan kepada (Verified by)", choosePerson:"- Pilih pengguna -", preparedBy:"Disediakan oleh", checkedBy:"Disemak oleh", verifiedByL:"Disahkan oleh", waitingFor:"Menunggu tindakan", checkSign:"Semak & tandatangan", verifyClose:"Sahkan & tutup", sendBack:"Hantar balik untuk semakan semula", changeChecker:"Tukar penyemak", changeVerifier:"Tukar pengesah", backNote:"Sebab dihantar balik", mine:"Untuk saya", notifyEmail:"E-mel untuk peringatan", emailHdr:"Peringatan e-mel", emailHelp:"E-mel dihantar dari peti mel Microsoft 365 apabila laporan pembaziran dihantar kepada penyemak atau pengesah, dan peringatan setiap hari bekerja jam 8:00 pagi selagi belum diambil tindakan. Isi e-mel setiap pengguna di Pengguna.", sendTest:"Hantar e-mel ujian kepada saya", emailsOn:"Hidup", emailsOff:"Mati", turnOn:"Hidupkan e-mel", turnOff:"Matikan e-mel", mbOk:"Peti mel disambung", mbNo:"Peti mel belum disambung", noEmails:"Tiada e-mel lagi", eSent:"Dihantar", eWait:"Menunggu", eFail:"Gagal", eExp:"Luput", noEmailWarn:"Pengguna ini belum ada e-mel, jadi peringatan e-mel tidak akan dihantar.", l_item:"Kod item", l_bqty:"Kuantiti asal (KG)", l_cqty:"Kuantiti siap (KG)", l_trans:"No. transaksi (Misc Issue)", l_loc:"Lokasi", l_reason:"Sebab / punca", l_bnHelp:"Pilih B/N job, atau taip no. batch bahan mentah.", formHdr:"Borang laporan pembaziran (ISO)", formNo:"No. borang", formRev:"Revisi", formEff:"Tarikh berkuat kuasa", printPdf:"Cetak / PDF", lossTitle1:"Laporan Kerugian Pengeluaran", sumTotal:"Jumlah", printedOn:"Dicetak", verifiedBy:"Disahkan oleh", occurred:"Masa kejadian",
   stage:"Peringkat", lossType:"Jenis kerugian", material:"Bahan / produk", qtyLost:"Kuantiti hilang", whatHappened:"Apa yang berlaku",
   immAction:"Tindakan segera", photos:"Gambar", addPhoto:"Ambil / pilih gambar", reporter:"Dilapor oleh", noJob:"- Tiada job (cth. bahan mentah di stor) -",
   disposition:"Keputusan bahan", corrective:"Tindakan pembetulan", signOff:"Tandatangan keputusan", signedBy:"Ditandatangani oleh",
   closeReport:"Tutup laporan selepas simpan", OPEN:"Terbuka", lossesLinked:"Laporan kerugian", unexplained:"Varians tidak dijelaskan",
   reportedLoss:"Kerugian dilapor", explained:"Dijelaskan", lossByType:"Ikut jenis", lossByStage:"Ikut peringkat", lossMonth:"Kerugian dilapor bulan ini",
-  uploading:"Memuat naik gambar…", editReport:"Ubah laporan", dispHelp:"Hanya penyelia pengeluaran, operasi atau admin boleh menandatangani keputusan bahan.",
+  uploading:"Memuat naik gambar…", editReport:"Ubah laporan", dispHelp:"Penyemak yang dipilih menandatangani keputusan bahan, kemudian pengesah mengesahkan untuk tutup laporan.",
   MIXING:"Campuran", PACKING:"Pembungkusan", TRANSFER:"Pindahan / Stor", RAW_MATERIAL:"Bahan Mentah",
   WASTAGE:"Pembaziran", EXPIRED:"Tamat tempoh", SPILLAGE:"Tumpahan", TORN_BAG:"Beg koyak", DAMAGED_PACK:"Pek rosak / jatuh", MACHINE_FAULT:"Kerosakan mesin", CONTAMINATION:"Pencemaran", RESIDUE:"Sisa / sapuan", OTHER:"Lain-lain",
   DISPOSE:"Buang", REWORK:"Proses semula", QUARANTINE:"Kuarantin", RETURN_TO_STOCK:"Kembali ke stok",
@@ -390,13 +394,13 @@ const T = {
   legacyTotal:"Older job: output recorded as totals only.", joList:"JOB numbers (separate with spaces)", batchOpt:"- All / not sure -",
   KG:"KG", PACK:"Pack", BAG:"Bag", CARTON:"Carton",
   guide:"User Guide", expandAll:"Expand / collapse all", print:"Print", guideIntro:"Sections for your role are opened first. Your role:",
-  loss:"Losses", lossTitle:"Production Loss Reports", reportLoss:"Report Loss", lossNo:"Report No.", l_item:"Item code", l_bqty:"QTY (KG)", l_cqty:"Completed QTY (KG)", l_trans:"Trans. No (Misc Issue)", l_loc:"Location", l_reason:"Reason", l_bnHelp:"Pick the job B/N, or type the raw material batch no.", formHdr:"Wastage report form (ISO)", formNo:"Form No.", formRev:"Revision", formEff:"Effective Date", printPdf:"Print / PDF", lossTitle1:"Production Loss Report", sumTotal:"Total", printedOn:"Printed", verifiedBy:"Verified by", occurred:"Time of incident",
+  loss:"Losses", lossTitle:"Production Loss Reports", reportLoss:"Report Loss", lossNo:"Report No.", CHECKED:"Checked", escCheck:"Escalate for checking to (Checked by)", escVerify:"Escalate for verification to (Verified by)", choosePerson:"- Choose a user -", preparedBy:"Prepared by", checkedBy:"Checked by", verifiedByL:"Verified by", waitingFor:"Waiting for action", checkSign:"Check & sign off", verifyClose:"Verify & close", sendBack:"Send back for re-check", changeChecker:"Change checker", changeVerifier:"Change verifier", backNote:"Reason for sending back", mine:"For me", notifyEmail:"Email for reminders", emailHdr:"Email reminders", emailHelp:"Emails go out from your Microsoft 365 mailbox when a wastage report is escalated to a checker or verifier, with a reminder every working day at 8:00 am until they act. Fill in each user's email under Users.", sendTest:"Send test email to me", emailsOn:"On", emailsOff:"Off", turnOn:"Turn emails on", turnOff:"Turn emails off", mbOk:"Mailbox connected", mbNo:"Mailbox not connected", noEmails:"No emails yet", eSent:"Sent", eWait:"Waiting", eFail:"Failed", eExp:"Expired", noEmailWarn:"This user has no email yet, so no reminder email will be sent.", l_item:"Item code", l_bqty:"QTY (KG)", l_cqty:"Completed QTY (KG)", l_trans:"Trans. No (Misc Issue)", l_loc:"Location", l_reason:"Reason", l_bnHelp:"Pick the job B/N, or type the raw material batch no.", formHdr:"Wastage report form (ISO)", formNo:"Form No.", formRev:"Revision", formEff:"Effective Date", printPdf:"Print / PDF", lossTitle1:"Production Loss Report", sumTotal:"Total", printedOn:"Printed", verifiedBy:"Verified by", occurred:"Time of incident",
   stage:"Stage", lossType:"Type of loss", material:"Material / product", qtyLost:"Quantity lost", whatHappened:"What happened",
   immAction:"Immediate action", photos:"Photos", addPhoto:"Take / choose photos", reporter:"Reported by", noJob:"- No job (e.g. raw material in store) -",
   disposition:"Disposition", corrective:"Corrective action", signOff:"Sign off disposition", signedBy:"Signed off by",
   closeReport:"Close report after saving", OPEN:"Open", lossesLinked:"Loss reports", unexplained:"Unexplained variance",
   reportedLoss:"Reported loss", explained:"Explained", lossByType:"By type", lossByStage:"By stage", lossMonth:"Reported losses this month",
-  uploading:"Uploading photos…", editReport:"Edit report", dispHelp:"Only a production supervisor, operation or admin can sign off the disposition.",
+  uploading:"Uploading photos…", editReport:"Edit report", dispHelp:"The chosen checker signs off the disposition, then the verifier verifies it to close the report.",
   MIXING:"Mixing", PACKING:"Packing", TRANSFER:"Transfer / Store", RAW_MATERIAL:"Raw Material",
   WASTAGE:"Wastage", EXPIRED:"Expired", SPILLAGE:"Spillage", TORN_BAG:"Torn bag", DAMAGED_PACK:"Damaged / dropped pack", MACHINE_FAULT:"Machine fault", CONTAMINATION:"Contamination", RESIDUE:"Residue / sweepings", OTHER:"Other",
   DISPOSE:"Dispose", REWORK:"Rework", QUARANTINE:"Quarantine", RETURN_TO_STOCK:"Return to stock",
@@ -496,6 +500,7 @@ async function loadAll(){
   S.machines = mR.data || [];
   const tg = (sR.data||[]).find(x=>x.key==="wastage_target_pct"); if(tg) S.target = Number(tg.value);
   S.cfg = Object.fromEntries((sR.data||[]).map(x=>[x.key, x.value]));
+  try{ const pr = await sb.from("app_users").select("user_id,full_name,username,role,active,notify_email").order("full_name"); S.people = pr.data || []; }catch(e){ S.people = []; }
 }
 async function fetchAllJobs(){
   let all=[], from=0; const size=1000;
@@ -560,6 +565,8 @@ async function boot(){
   try { await loadAll(); } catch(e){ toast(errMsg(e), true); }
   subscribe();
   render();
+  const lk = location.hash.match(/^#loss-(\d+)$/);
+  if(lk){ history.replaceState(null, "", location.pathname); S.tab = "loss"; render(); if(S.losses.find(x=>x.id===Number(lk[1]))) openLoss(Number(lk[1])); else toast(t("noData"), true); }
 }
 sb.auth.onAuthStateChange((ev) => { if(ev==="SIGNED_OUT"){ S.me=null; renderLogin(); } });
 
@@ -1364,9 +1371,9 @@ function renderLoss(m){
   if(!S.month) S.month = today().slice(0,7);
   const months = [...new Set([today().slice(0,7), ...monthsAvailable(), ...S.losses.map(l=>toMY(l.occurred_at).slice(0,7))])].sort().reverse();
   const inMonth = S.losses.filter(l=>toMY(l.occurred_at).slice(0,7)===S.month);
-  const list = (S.lossF==="OPEN" ? S.losses.filter(l=>l.status==="OPEN") : S.lossF==="MONTH" ? inMonth : S.losses);
+  const list = (S.lossF==="OPEN" ? S.losses.filter(l=>l.status!=="CLOSED") : S.lossF==="MINE" ? S.losses.filter(lWaitingMe) : S.lossF==="MONTH" ? inMonth : S.losses);
   const total = inMonth.reduce((a,l)=>a+lKg(l),0), totalOther = otherUnits(inMonth);
-  const openN = S.losses.filter(l=>l.status==="OPEN").length;
+  const openN = S.losses.filter(l=>l.status!=="CLOSED").length, mineN = S.losses.filter(lWaitingMe).length;
   const desk = isDesk();
   m.innerHTML = `
    <div class="toolbar"><h2 class="pg grow" style="margin:0">${t("lossTitle")}</h2>
@@ -1376,15 +1383,15 @@ function renderLoss(m){
      ${perm("loss_report")?`<button class="btn primary" id="newL">+ ${t("reportLoss")}</button>`:""}</div>
    <div class="kpis">
      <div class="card kpi"><div class="l">${t("lossMonth")}</div><div class="v">${nf(total, total%1?2:0)}</div><div class="s">KG${totalOther?" + "+esc(totalOther):""} · ${inMonth.length}</div></div>
-     <div class="card kpi"><div class="l">${t("OPEN")}</div><div class="v" style="${openN?"color:var(--warn)":""}">${openN}</div><div class="s">${t("dispHelp").split(".")[0]}</div></div>
+     <div class="card kpi"><div class="l">${t("OPEN")}</div><div class="v" style="${openN?"color:var(--warn)":""}">${openN}</div><div class="s">${t("mine")}: ${mineN}</div></div>
    </div>
-   <div class="chips">${[["OPEN",t("OPEN"),openN],["MONTH",monLabel(S.month),inMonth.length],["ALL",t("all"),S.losses.length]].map(([k,l,n])=>`<button class="chip ${S.lossF===k?"on":""}" data-f="${k}">${esc(l)}<b>${n}</b></button>`).join("")}</div>
+   <div class="chips">${[["MINE","⏳ "+t("mine"),mineN],["OPEN",t("OPEN"),openN],["MONTH",monLabel(S.month),inMonth.length],["ALL",t("all"),S.losses.length]].map(([k,l,n])=>`<button class="chip ${S.lossF===k?"on":""}" data-f="${k}">${esc(l)}<b>${n}</b></button>`).join("")}</div>
    ${!list.length?`<div class="card empty">${t("noData")}</div>` : desk ? `<div class="card tbl-wrap"><table class="jobs"><thead><tr>
       <th>${t("lossNo")}</th><th>${t("occurred")}</th><th>Job</th><th>${t("stage")}</th><th>${t("lossType")}</th><th>${t("material")}</th><th class="n">${t("qtyLost")}</th><th>${t("disposition")}</th><th>${t("reporter")}</th><th>Status</th></tr></thead><tbody>
-      ${list.map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id); return `<tr data-lid="${l.id}"><td><b>${esc(l.report_no)}</b></td><td>${fdt(l.occurred_at)}</td><td>${j?esc(j.job_no):"-"}${l.batch_no?`<div class="muted small">B/N ${esc(l.batch_no)}</div>`:""}</td><td>${esc(t(l.stage))}</td><td>${esc(t(l.loss_type))}</td><td class="wrapc">${esc(l.material)}</td><td class="n"><b>${esc(lQty(l))}</b></td><td>${l.disposition?esc(t(l.disposition)):"-"}</td><td>${esc(l.reporter_name||"")}</td><td><span class="badge ${l.status==="OPEN"?"s-IN_PROCESS":"s-CLOSED"}">${t(l.status)}</span></td></tr>`; }).join("")}
+      ${list.map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id); return `<tr data-lid="${l.id}"><td><b>${esc(l.report_no)}</b></td><td>${fdt(l.occurred_at)}</td><td>${j?esc(j.job_no):"-"}${l.batch_no?`<div class="muted small">B/N ${esc(l.batch_no)}</div>`:""}</td><td>${esc(t(l.stage))}</td><td>${esc(t(l.loss_type))}</td><td class="wrapc">${esc(l.material)}</td><td class="n"><b>${esc(lQty(l))}</b></td><td>${l.disposition?esc(t(l.disposition)):"-"}</td><td>${esc(l.reporter_name||"")}</td><td><span class="badge ${lBadge(l.status)}">${t(l.status)}</span></td></tr>`; }).join("")}
      </tbody></table></div>`
    : `<div class="joblist">${list.map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id); return `<button class="card job" data-lid="${l.id}">
-      <div class="top"><span class="no">${esc(l.report_no)} · ${fdt(l.occurred_at)}</span><span class="badge ${l.status==="OPEN"?"s-IN_PROCESS":"s-CLOSED"}">${t(l.status)}</span></div>
+      <div class="top"><span class="no">${esc(l.report_no)} · ${fdt(l.occurred_at)}</span><span class="badge ${lBadge(l.status)}">${t(l.status)}</span></div>
       <div class="prod">${esc(t(l.loss_type))} · ${esc(lQty(l))}</div>
       <div class="meta"><span>${esc(l.material)}</span><span>${esc(t(l.stage))}</span>${j?`<span>${esc(j.job_no)}</span>`:""}${l.photo_paths?.length?`<span>📷 ${l.photo_paths.length}</span>`:""}</div></button>`; }).join("")}</div>`}`;
   $("#mon").onchange = e => { S.month = e.target.value; S.lossF="MONTH"; renderLoss(m); };
@@ -1399,10 +1406,15 @@ const toMY = ts => new Date(ts).toLocaleString("sv-SE",{timeZone:"Asia/Kuala_Lum
 async function openLoss(id){
   const l = S.losses.find(x=>x.id===id); if(!l) return;
   const j = S.jobs.find(x=>x.id===l.job_id);
-  const canSign = perm("loss_signoff");
-  const canEdit = (l.status==="OPEN" && ((l.reported_by===S.me.user_id && perm("loss_report")) || canSign)) || can("admin");
+  const me = S.me.user_id, adm = can("admin");
+  const canSign = l.status==="OPEN" && (adm || (l.check_to ? l.check_to===me : perm("loss_signoff")));
+  const canVerify = l.status==="CHECKED" && (adm || (l.verify_to ? l.verify_to===me : (perm("loss_signoff") && l.disposition_by!==me)));
+  const canChgChk = l.status==="OPEN" && (adm || l.reported_by===me || l.check_to===me || perm("loss_signoff"));
+  const canChgVer = l.status==="CHECKED" && (adm || l.disposition_by===me || l.check_to===me || l.reported_by===me || perm("loss_signoff"));
+  const canEdit = (l.status!=="CLOSED" && ((l.reported_by===me && perm("loss_report")) || perm("loss_signoff") || l.check_to===me)) || adm;
+  const step = (lbl, name, when, wait, done) => `<div class="lstep ${done?"done":wait?"wait":""}"><div class="muted small">${lbl}</div><div style="font-weight:600">${done?"✓ ":""}${esc(name||"-")}</div><div class="muted small">${done&&when?fdt(when):wait?"⏳ "+t("waitingFor"):""}</div></div>`;
   const body = `
-   <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="badge ${l.status==="OPEN"?"s-IN_PROCESS":"s-CLOSED"}">${t(l.status)}</span><span class="muted small">${fdt(l.occurred_at)}</span></div>
+   <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="badge ${lBadge(l.status)}">${t(l.status)}</span><span class="muted small">${fdt(l.occurred_at)}</span></div>
    <div class="card sec"><div style="font-size:18px;font-weight:700;margin-bottom:6px">${esc(t(l.loss_type))} · ${esc(lQty(l))}</div>
     <dl class="kv">
      <dt>${t("material")}</dt><dd>${esc(l.material)}</dd>
@@ -1421,13 +1433,21 @@ async function openLoss(id){
     ${l.reason?`<h3 style="margin-top:10px">${t("l_reason")}</h3><div style="white-space:pre-wrap">${esc(l.reason)}</div>`:""}
     ${l.immediate_action?`<h3 style="margin-top:10px">${t("immAction")}</h3><div style="white-space:pre-wrap">${esc(l.immediate_action)}</div>`:""}</div>
    ${l.photo_paths?.length?`<div class="card sec"><h3>${t("photos")} (${l.photo_paths.length})</h3><div id="ph" class="grid2"><span class="muted">${t("loading")}</span></div></div>`:""}
+   <div class="card sec"><div class="lsteps">
+     ${step(t("preparedBy"), l.reporter_name, l.created_at, false, true)}
+     ${step(t("checkedBy"), l.status==="OPEN" ? (l.check_to_name||"") : l.disposition_name, l.disposition_at, l.status==="OPEN", l.status!=="OPEN")}
+     ${step(t("verifiedByL"), l.status==="CLOSED" ? (l.verified_name||l.disposition_name) : (l.verify_to_name||""), l.verified_at, l.status==="CHECKED", l.status==="CLOSED")}
+    </div>${l.verify_note && l.status!=="CLOSED"?`<div class="errbox" style="margin-top:8px">${t("backNote")}: ${esc(l.verify_note)}</div>`:""}</div>
    <div class="card sec"><h3>${t("disposition")}</h3>
     ${l.disposition?`<dl class="kv"><dt>${t("disposition")}</dt><dd>${esc(t(l.disposition))}</dd>
       ${l.corrective_action?`<dt>${t("corrective")}</dt><dd>${esc(l.corrective_action)}</dd>`:""}
       <dt>${t("signedBy")}</dt><dd>${esc(l.disposition_name||"-")}<br><span class="muted small">${fdt(l.disposition_at)}</span></dd></dl>`
       :`<div class="muted small">${t("dispHelp")}</div>`}</div>
    <div class="actions">
-    ${canSign?`<button class="btn block primary" id="signL">${t("signOff")}</button>`:""}
+    ${canSign?`<button class="btn block primary" id="signL">${t("checkSign")}</button>`:""}
+    ${canVerify?`<button class="btn block primary" id="verL">✓ ${t("verifyClose")}</button><button class="btn block ghost" id="backL">↩ ${t("sendBack")}</button>`:""}
+    ${canChgChk && !canSign?`<button class="btn block ghost" id="chgC">${t("changeChecker")}</button>`:""}
+    ${canChgVer && !canVerify?`<button class="btn block ghost" id="chgV">${t("changeVerifier")}</button>`:""}
     ${canEdit?`<button class="btn block ghost" id="editL">${t("editReport")}</button>`:""}
     <button class="btn block ghost" id="printL">🖨 ${t("printPdf")}</button>
    </div>`;
@@ -1435,16 +1455,23 @@ async function openLoss(id){
   if($("#toJob")) $("#toJob").onclick = e => { e.preventDefault(); openJob(j.id); };
   if($("#editL")) $("#editL").onclick = () => openLossForm(l);
   $("#printL").onclick = () => printLoss([l]);
+  const save = async (upd) => { const { data, error } = await sb.from("loss_reports").update(upd).eq("id", l.id).select().single();
+    if(error) throw error; upsertLoss(data); toast(t("saved")); openLoss(l.id); renderMainOnly(); };
+  const ppl = (sel) => [["",t("choosePerson")], ...(S.people||[]).filter(u=>u.active && u.role!=="viewer" && u.user_id!==me).map(u=>[u.user_id, (u.full_name||u.username)+(u.notify_email?"":" ✉✗")])];
   if($("#signL")) $("#signL").onclick = () => {
-    formSheet(`${t("signOff")} · ${esc(l.report_no)}`, [
+    formSheet(`${t("checkSign")} · ${esc(l.report_no)}`, [
       {k:"d",label:t("disposition"),type:"select",v:l.disposition||"DISPOSE",opts:LDISP.map(x=>[x,t(x)])},
       {k:"c",label:t("corrective"),type:"textarea",v:l.corrective_action||""},
-      {k:"s",label:t("closeReport"),type:"select",v:"CLOSED",opts:[["CLOSED","✓ "+t("CLOSED")],["OPEN",t("OPEN")]]}
-    ], async v => {
-      const { data, error } = await sb.from("loss_reports").update({ disposition:v.d, corrective_action:v.c.trim()||null, status:v.s }).eq("id", l.id).select().single();
-      if(error) throw error; upsertLoss(data); toast(t("saved")); openLoss(l.id); renderMainOnly();
-    });
+      {k:"v",label:t("escVerify"),type:"select",v:l.verify_to||"",opts:ppl(l.verify_to),req:true}
+    ], async v => { if(!v.v) throw new Error(t("escVerify")); await save({ disposition:v.d, corrective_action:v.c.trim()||null, status:"CHECKED", verify_to:v.v }); });
   };
+  if($("#verL")) $("#verL").onclick = async () => { try{ await save({ status:"CLOSED" }); }catch(e){ toast(errMsg(e), true); } };
+  if($("#backL")) $("#backL").onclick = () => formSheet(`${t("sendBack")} · ${esc(l.report_no)}`, [{k:"n",label:t("backNote"),type:"textarea",req:true}],
+    async v => save({ status:"OPEN", verify_note:v.n.trim() }));
+  if($("#chgC")) $("#chgC").onclick = () => formSheet(`${t("changeChecker")} · ${esc(l.report_no)}`, [{k:"u",label:t("escCheck"),type:"select",v:l.check_to||"",opts:ppl(l.check_to),req:true}],
+    async v => { if(!v.u) throw new Error(t("escCheck")); await save({ check_to:v.u }); });
+  if($("#chgV")) $("#chgV").onclick = () => formSheet(`${t("changeVerifier")} · ${esc(l.report_no)}`, [{k:"u",label:t("escVerify"),type:"select",v:l.verify_to||"",opts:ppl(l.verify_to),req:true}],
+    async v => { if(!v.u) throw new Error(t("escVerify")); await save({ verify_to:v.u }); });
   if(l.photo_paths?.length){
     const { data } = await sb.storage.from("loss-photos").createSignedUrls(l.photo_paths, 3600);
     const ph = $("#ph"); if(ph) ph.innerHTML = (data||[]).map(d=>d.signedUrl?`<a href="${d.signedUrl}" target="_blank" rel="noopener"><img src="${d.signedUrl}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--line)"></a>`:"").join("");
@@ -1474,7 +1501,7 @@ async function printLoss(list){
        <tbody><tr class="dr"><td>1</td><td>${esc(E(l.loss_type))}</td><td>${br(l.description)}</td><td>${d10(l.occurred_at)}</td><td>${esc(l.batch_no||"")}</td><td class="sm">${item}</td><td>${q(l.batch_qty)}</td><td>${q(l.completed_qty)}</td><td>${esc(nf(Number(l.qty_kg), Number(l.qty_kg)%1?2:0))} ${esc(lUom(l))}</td><td>${esc(l.trans_no||"")}</td><td>${esc(l.location||"-")}</td><td>${br(l.reason)}</td><td>${br(action)}</td></tr>
        <tr class="pr"><td colspan="13"><div class="pics">${pics}</div></td></tr></tbody></table>
       <div class="sigw"><table class="sigt"><tr><th>PREPARED BY</th><th>CHECKED BY</th><th>VERIFIED BY</th></tr>
-       <tr><td>${esc(l.reporter_name||"")}<br><span>${d10(l.created_at||l.occurred_at)}</span></td><td>${esc(l.disposition_name||"")}${l.disposition_at?`<br><span>${d10(l.disposition_at)}</span>`:""}</td><td></td></tr></table></div>
+       <tr><td>${esc(l.reporter_name||"")}<br><span>${d10(l.created_at||l.occurred_at)}</span></td><td>${esc(l.disposition_name||"")}${l.disposition_at?`<br><span>${d10(l.disposition_at)}</span>`:""}</td><td>${esc(l.verified_name||"")}${l.verified_at?`<br><span>${d10(l.verified_at)}</span>`:""}</td></tr></table></div>
       <div class="fref">${esc(l.report_no)}${j?` · ${esc(j.job_no)}`:""}${l.disposition?` · ${esc(E(l.disposition))}`:""}</div>
     </div>`; }).join("");
   let el = document.getElementById("printDoc"); if(!el){ el = document.createElement("div"); el.id = "printDoc"; document.body.appendChild(el); }
@@ -1486,6 +1513,20 @@ async function printLoss(list){
   window.addEventListener("afterprint", done);
   window.print();
 }
+const lBadge = st => st==="OPEN" ? "s-IN_PROCESS" : st==="CHECKED" ? "s-RELEASED" : "s-CLOSED";
+const peopleOpts = (sel) => `<option value="">${t("choosePerson")}</option>` + (S.people||[]).filter(u=>u.active && u.role!=="viewer" || u.user_id===sel).map(u=>`<option value="${u.user_id}" ${u.user_id===sel?"selected":""}>${esc(u.full_name||u.username)}${u.notify_email?"":" ✉✗"}</option>`).join("");
+const lWaitingMe = l => S.me && ((l.status==="OPEN" && l.check_to===S.me.user_id) || (l.status==="CHECKED" && l.verify_to===S.me.user_id));
+async function loadNotify(){ const box=$("#ntBox"); if(!box) return;
+  try{ const [st, ob] = await Promise.all([sb.from("notify_settings").select("*"), sb.from("notify_outbox").select("id,to_name,to_email,subject,created_at,sent_at,last_error").order("id",{ascending:false}).limit(20)]);
+    if(st.error) throw st.error; if(ob.error) throw ob.error;
+    const c = Object.fromEntries((st.data||[]).map(r=>[r.key,r.value])), on = c.enabled!=="false", ls = c.last_status||"", okm = /^OK/.test(ls);
+    box.className=""; box.innerHTML = `<div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px"><span class="badge ${on?"s-CLOSED":"s-CANCELLED"}">${on?t("emailsOn"):t("emailsOff")}</span><span class="badge ${okm?"s-CLOSED":"s-IN_PROCESS"}">${okm?t("mbOk"):t("mbNo")}</span><span class="muted small">${esc(ls)}</span></div>
+     <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px"><button class="btn primary" id="ntT">${t("sendTest")}</button><button class="btn" id="ntO">${on?t("turnOff"):t("turnOn")}</button><button class="btn ghost" id="ntR">↻</button></div>
+     ${(ob.data||[]).length?`<div class="scroll-x"><table class="t"><tr><th></th><th>${t("users")}</th><th></th><th>Status</th></tr>${ob.data.map(m=>`<tr><td class="small">${fdt(m.created_at)}</td><td>${esc(m.to_name||m.to_email)}</td><td class="small">${esc(m.subject)}</td><td>${m.sent_at?`<span class="badge s-CLOSED">${t("eSent")}</span>`:m.last_error?`<span class="badge s-CANCELLED" title="${esc(m.last_error)}">${/^Expired/.test(m.last_error)?t("eExp"):t("eFail")}</span>`:`<span class="badge s-IN_PROCESS">${t("eWait")}</span>`}</td></tr>`).join("")}</table></div>`:`<div class="muted small">${t("noEmails")}</div>`}`;
+    $("#ntR").onclick = loadNotify;
+    $("#ntT").onclick = async () => { const { error } = await sb.rpc("notify_test"); if(error) return toast(errMsg(error), true); toast(t("saved")); setTimeout(loadNotify, 4000); };
+    $("#ntO").onclick = async () => { const { error } = await sb.rpc("notify_set_enabled", { p_on: !on }); if(error) return toast(errMsg(error), true); loadNotify(); };
+  }catch(e){ box.textContent = errMsg(e); } }
 function upsertLoss(row){ const i=S.losses.findIndex(x=>x.id===row.id); if(i>=0) S.losses[i]=row; else S.losses.unshift(row); }
 
 async function compressImage(file){
@@ -1532,6 +1573,7 @@ function openLossForm(l, jobId){
     <label class="f">${t("l_reason")}</label><textarea id="l_reason">${esc(isEdit?(l.reason||""):"")}</textarea>
     <label class="f">${t("immAction")}</label><textarea id="l_act">${esc(isEdit?(l.immediate_action||""):"")}</textarea>
     <label class="f">${t("cmmsRef")}</label><input type="text" id="l_cmms" maxlength="60" placeholder="${esc(t("cmmsRefPh"))}" value="${esc(isEdit?(l.cmms_ref||""):"")}">
+    ${!isEdit || l.status==="OPEN" ? `<label class="f">${t("escCheck")}</label><select id="l_chk" ${isEdit?"":"required"}>${peopleOpts(isEdit?l.check_to:null)}</select><div class="muted small" id="l_chkw"></div>` : ""}
     <label class="f">${t("photos")} ${isEdit&&l.photo_paths?.length?`<span class="muted">(${l.photo_paths.length} ✓)</span>`:""}</label>
     <input type="file" id="l_ph" accept="image/*" capture="environment" multiple style="min-height:auto;padding:8px">
     <div class="muted small" id="l_phn" style="margin-top:4px"></div>
@@ -1545,6 +1587,7 @@ function openLossForm(l, jobId){
   $("#l_job").onchange = e => { const j=S.jobs.find(x=>x.id===Number(e.target.value)); if(j && !$("#l_mat").value) $("#l_mat").value=j.product; if(j && j.item_code && !$("#l_item").value) $("#l_item").value=j.item_code; fillBn(); };
   $("#l_bn").onchange = () => { const j=S.jobs.find(x=>x.id===Number($("#l_job").value)); const bn=$("#l_bn").value.trim(); if(!j || !bn || $("#l_bq").value) return;
     const i=(j.jo_mix||[]).indexOf(bn); if(i<0) return; const b=batchesOf(j.id).find(x=>x.jo_no===bn); $("#l_bq").value = b&&b.mix_kg!=null ? b.mix_kg : planQtyAt(j,i); };
+  if($("#l_chk")){ const w = () => { const u=(S.people||[]).find(x=>x.user_id===$("#l_chk").value); $("#l_chkw").textContent = u && !u.notify_email ? t("noEmailWarn") : ""; }; $("#l_chk").onchange = w; w(); }
   $("#l_ph").onchange = e => { $("#l_phn").textContent = e.target.files.length ? `${e.target.files.length} 📷` : ""; };
   $("#lc").onclick = () => isEdit ? openLoss(l.id) : closeSheet();
   $("#lf2").onsubmit = async e => {
@@ -1573,6 +1616,7 @@ function openLossForm(l, jobId){
         trans_no: $("#l_trans").value.trim() || null, location: $("#l_loc").value.trim() || null, reason: $("#l_reason").value.trim() || null
       };
       row.batch_no = $("#l_bn").value.trim() || null;
+      if($("#l_chk") && ($("#l_chk").value || isEdit)) row.check_to = $("#l_chk").value || null;
       const q = isEdit ? sb.from("loss_reports").update(row).eq("id", l.id) : sb.from("loss_reports").insert(row);
       const { data, error } = await q.select().single(); if(error) throw error;
       upsertLoss(data); toast(`${t("saved")}: ${data.report_no}`); openLoss(data.id); renderMainOnly();
@@ -1580,9 +1624,9 @@ function openLossForm(l, jobId){
   };
 }
 function exportLossCsv(list){
-  const cols = ["report_no","occurred_at","job_no","batch_no","item_code","stage","loss_type","material","batch_qty","completed_qty","qty_kg","uom","trans_no","location","description","reason","immediate_action","cmms_ref","reporter_name","disposition","corrective_action","disposition_name","disposition_at","status","photos"];
+  const cols = ["report_no","occurred_at","job_no","batch_no","item_code","stage","loss_type","material","batch_qty","completed_qty","qty_kg","uom","trans_no","location","description","reason","immediate_action","cmms_ref","reporter_name","check_to_name","disposition","corrective_action","disposition_name","disposition_at","verify_to_name","verified_name","verified_at","status","photos"];
   const rows = [...list].sort((a,b)=>a.id-b.id).map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id);
-    const o = {...l, occurred_at: fdt(l.occurred_at), disposition_at: l.disposition_at?fdt(l.disposition_at):"", job_no: j?j.job_no:"", photos:(l.photo_paths||[]).length, stage:t(l.stage), loss_type:t(l.loss_type), disposition:l.disposition?t(l.disposition):""};
+    const o = {...l, occurred_at: fdt(l.occurred_at), disposition_at: l.disposition_at?fdt(l.disposition_at):"", verified_at: l.verified_at?fdt(l.verified_at):"", job_no: j?j.job_no:"", photos:(l.photo_paths||[]).length, stage:t(l.stage), loss_type:t(l.loss_type), disposition:l.disposition?t(l.disposition):""};
     return cols.map(c=>{ let v=o[c]??""; v=String(v); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; }).join(","); });
   const blob = new Blob(["﻿"+cols.join(",")+"\n"+rows.join("\n")], {type:"text/csv;charset=utf-8"});
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `GFB_Loss_Reports_${today()}.csv`; a.click();
@@ -1792,6 +1836,8 @@ async function renderMore(m){
      ${TASKS.map(k=>`<tr><td>${esc(t("T_"+k))}</td>${PROLES.map(r=>`<td style="text-align:center"><input type="checkbox" style="width:20px;height:20px" data-pr="${r}" data-pt="${k}" ${S.perms[r+"|"+k]?"checked":""}></td>`).join("")}<td style="text-align:center"><input type="checkbox" checked disabled style="width:20px;height:20px"></td></tr>`).join("")}
    </table></div>
    <div class="muted small" style="margin:0 2px 8px">${t("accessHelp")}</div>
+   <h3 style="margin:18px 0 8px;font-size:16px">${t("emailHdr")}</h3>
+   <div class="card" style="margin-bottom:10px;padding:12px"><div class="muted small" style="margin-bottom:8px">${t("emailHelp")}</div><div id="ntBox" class="muted">${t("loading")}</div></div>
    <h3 style="margin:18px 0 8px;font-size:16px">${t("settings")}</h3>
    <div class="card" style="margin-bottom:10px">
      <div class="listitem"><span class="grow">${t("wasteTarget")}</span><input type="number" id="wt" step="0.1" min="0" value="${S.target}" style="width:90px"><button class="btn" id="wts">${t("save")}</button></div>
@@ -1820,6 +1866,7 @@ async function renderMore(m){
     if(v) S.perms[r+"|"+k] = true; else delete S.perms[r+"|"+k];
     toast(`${t(r)}: ${t("T_"+k)} ${v?"✓":"✗"}`);
   });
+  loadNotify();
   $("#ffs").onclick = async () => { const rows=[["loss_form_no",$("#ff_no").value.trim()],["loss_form_rev",$("#ff_rev").value.trim()],["loss_form_eff",$("#ff_eff").value.trim()]];
     for(const [k,v] of rows){ const { error } = await sb.from("app_settings").update({value:v}).eq("key",k); if(error) return toast(errMsg(error),true); S.cfg[k]=v; } toast(t("saved")); };
   $("#wts").onclick = async () => { const v=Number($("#wt").value); const { error } = await sb.from("app_settings").update({value:String(v)}).eq("key","wastage_target_pct"); if(error) return toast(errMsg(error),true); S.target=v; toast(t("saved")); };
@@ -1848,7 +1895,7 @@ async function loadUsers(){
   if(error){ el.innerHTML = `<div class="listitem errbox">${esc(errMsg(error))}</div>`; return; }
   S.users = data;
   el.innerHTML = data.map(u=>`<div class="listitem" style="cursor:pointer" data-uid="${u.user_id}">
-    <div class="grow"><div style="font-weight:600">${esc(u.full_name)} ${u.active?"":`<span class="badge s-CANCELLED">OFF</span>`}</div><div class="muted small">@${esc(u.username)} · ${t(u.role)} · ${t("lastSeen")}: ${last[u.user_id]?fdt(last[u.user_id]):t("never")}</div></div><span class="muted">›</span></div>`).join("")
+    <div class="grow"><div style="font-weight:600">${esc(u.full_name)} ${u.active?"":`<span class="badge s-CANCELLED">OFF</span>`}</div><div class="muted small">@${esc(u.username)} · ${t(u.role)} · ${u.notify_email?"✉ "+esc(u.notify_email):"✉✗"} · ${t("lastSeen")}: ${last[u.user_id]?fdt(last[u.user_id]):t("never")}</div></div><span class="muted">›</span></div>`).join("")
     + `<div class="listitem" style="cursor:pointer;color:var(--brand);font-weight:600" id="accLog">🕒 ${t("accessLog")}<span class="grow"></span><span class="muted">›</span></div>`;
   $("#accLog").onclick = openAccessLog;
   el.querySelectorAll("[data-uid]").forEach(r=>r.onclick=()=>editUser(S.users.find(u=>u.user_id===r.dataset.uid)));
@@ -1895,13 +1942,14 @@ function editUser(u){
   formSheet(`${esc(u.full_name)} · @${esc(u.username)}`, [
     {k:"u",label:t("usernameLogin"),v:u.username,req:true},
     {k:"n",label:t("fullNameDisp"),v:u.full_name,req:true},
+    {k:"e",label:t("notifyEmail"),type:"email",v:u.notify_email||""},
     {k:"r",label:t("role"),type:"select",v:u.role,opts:["admin","planner","supervisor","operation","viewer"].map(r=>[r,t(r)])},
     {k:"a",label:t("activeUser"),type:"select",v:String(u.active),opts:[["true","✓ "+t("activeUser")],["false","✗ OFF"]]},
     {k:"p",label:t("resetPw")+" ("+t("pwMin")+")",type:"text",v:""}
   ], async v => {
     const nu = v.u.trim().toLowerCase();
     if(nu !== u.username){ const r0 = await sb.rpc("admin_set_username", { p_user:u.user_id, p_username:nu }); if(r0.error) throw r0.error; }
-    const { error } = await sb.from("app_users").update({ full_name:v.n.trim(), role:v.r, active:v.a==="true" }).eq("user_id", u.user_id);
+    const { error } = await sb.from("app_users").update({ full_name:v.n.trim(), role:v.r, active:v.a==="true", notify_email:(v.e||"").trim().toLowerCase()||null }).eq("user_id", u.user_id);
     if(error) throw error;
     if(v.p){ const r = await sb.rpc("admin_reset_password", { p_user:u.user_id, p_password:v.p.trim() }); if(r.error) throw r.error; }
     closeSheet(); toast(t("saved")); loadUsers();
