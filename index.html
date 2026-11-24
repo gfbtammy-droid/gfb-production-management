@@ -335,7 +335,7 @@ const T = {
   reportedLoss:"Kerugian dilapor", explained:"Dijelaskan", lossByType:"Ikut jenis", lossByStage:"Ikut peringkat", lossMonth:"Kerugian dilapor bulan ini",
   uploading:"Memuat naik gambar…", editReport:"Ubah laporan", dispHelp:"Penyemak yang dipilih menandatangani keputusan bahan, kemudian pengesah mengesahkan untuk tutup laporan.",
   MIXING:"Campuran", PACKING:"Pembungkusan", TRANSFER:"Pindahan / Stor", RAW_MATERIAL:"Bahan Mentah",
-  WASTAGE:"Pembaziran", EXPIRED:"Tamat tempoh", SPILLAGE:"Tumpahan", TORN_BAG:"Beg koyak", DAMAGED_PACK:"Pek rosak / jatuh", MACHINE_FAULT:"Kerosakan mesin", CONTAMINATION:"Pencemaran", RESIDUE:"Sisa / sapuan", OTHER:"Lain-lain",
+  WASTAGE:"Pembaziran", EXPIRED:"Tamat tempoh", AIR_LEAK_TEST:"Ujian kebocoran udara", SPILLAGE:"Tumpahan", TORN_BAG:"Beg koyak", DAMAGED_PACK:"Pek rosak / jatuh", MACHINE_FAULT:"Kerosakan mesin", CONTAMINATION:"Pencemaran", RESIDUE:"Sisa / sapuan", OTHER:"Lain-lain",
   DISPOSE:"Buang", REWORK:"Proses semula", QUARANTINE:"Kuarantin", RETURN_TO_STOCK:"Kembali ke stok",
   sharedPack:"JOB pembungkusan", c_project:"Projek", c_remark:"Catatan", c_cust:"Pelanggan", c_plan:"Tarikh Pelan", c_rel:"Tarikh Lepas", c_done:"Tarikh Siap", s_plan:"Pelan", s_rel:"Lepas", s_done:"Siap", c_date:"Tarikh", c_machine:"Mesin", c_product:"Produk", c_batch:"Kg × Klpk", c_total:"KG", c_jo:"JOB", c_mix:"Campuran", c_pack:"Bungkus", c_var:"Varians", c_status:"Status", none:"Tiada", today:"Hari ini", lockedPlan:"Pelan dikunci selepas pengeluaran bermula."
  },
@@ -402,7 +402,7 @@ const T = {
   reportedLoss:"Reported loss", explained:"Explained", lossByType:"By type", lossByStage:"By stage", lossMonth:"Reported losses this month",
   uploading:"Uploading photos…", editReport:"Edit report", dispHelp:"The chosen checker signs off the disposition, then the verifier verifies it to close the report.",
   MIXING:"Mixing", PACKING:"Packing", TRANSFER:"Transfer / Store", RAW_MATERIAL:"Raw Material",
-  WASTAGE:"Wastage", EXPIRED:"Expired", SPILLAGE:"Spillage", TORN_BAG:"Torn bag", DAMAGED_PACK:"Damaged / dropped pack", MACHINE_FAULT:"Machine fault", CONTAMINATION:"Contamination", RESIDUE:"Residue / sweepings", OTHER:"Other",
+  WASTAGE:"Wastage", EXPIRED:"Expired", AIR_LEAK_TEST:"Air leak test", SPILLAGE:"Spillage", TORN_BAG:"Torn bag", DAMAGED_PACK:"Damaged / dropped pack", MACHINE_FAULT:"Machine fault", CONTAMINATION:"Contamination", RESIDUE:"Residue / sweepings", OTHER:"Other",
   DISPOSE:"Dispose", REWORK:"Rework", QUARANTINE:"Quarantine", RETURN_TO_STOCK:"Return to stock",
   sharedPack:"JOB Packing", c_project:"Project", c_remark:"Remark", c_cust:"Customer", c_plan:"Plan Date", c_rel:"Release Date", c_done:"Done Date", s_plan:"Plan", s_rel:"Released", s_done:"Done", c_date:"Date", c_machine:"Machine", c_product:"Product", c_batch:"Kg × Batch", c_total:"KG", c_jo:"JOB", c_mix:"Mixed", c_pack:"Packed", c_var:"Var.", c_status:"Status", none:"None", today:"Today", lockedPlan:"Plan is locked once production starts."
  }
@@ -467,7 +467,7 @@ const UOMS = ["KG","PACK","BAG","CARTON"];
 const UOM_SHORT = {KG:"KG",PACK:"PK",BAG:"BAG",CARTON:"CTN"};
 const packText = j => j.packing_output==null ? null : (j.pack_uom && j.pack_uom!=="KG" && j.pack_qty!=null ? `${nf(j.pack_qty, j.pack_qty%1?2:0)} ${t(j.pack_uom)} × ${nf(j.pack_unit_kg, 2)} kg = ${kg(j.packing_output)}` : kg(j.packing_output));
 const LSTAGES = ["MIXING","PACKING","TRANSFER","RAW_MATERIAL"];
-const LTYPES = ["WASTAGE","EXPIRED","SPILLAGE","TORN_BAG","DAMAGED_PACK","MACHINE_FAULT","CONTAMINATION","RESIDUE","OTHER"];
+const LTYPES = ["WASTAGE","EXPIRED","AIR_LEAK_TEST","SPILLAGE","TORN_BAG","DAMAGED_PACK","MACHINE_FAULT","CONTAMINATION","RESIDUE","OTHER"];
 const LDISP = ["DISPOSE","REWORK","QUARANTINE","RETURN_TO_STOCK"];
 const can = (...roles) => S.me && roles.includes(S.me.role);
 const perm = task => !!S.me && (S.me.role==="admin" || !!S.perms[S.me.role+"|"+task]);
