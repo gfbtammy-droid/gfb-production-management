@@ -225,27 +225,30 @@ details.guide .gbody li{margin:4px 0}
 .print-only{display:none}
 #printDoc{display:none}
 @media print{
-  @page{margin:12mm}
+  @page f60{size:A4 landscape;margin:14mm 8mm 9mm}
   body.printing > *:not(#printDoc){display:none!important}
   body.printing #printDoc{display:block}
-  #printDoc{font:12px/1.45 Arial,Helvetica,sans-serif;color:#000}
-  #printDoc .pd{break-after:page}
+  #printDoc{font:11px/1.35 Calibri,Carlito,Arial,sans-serif;color:#000}
+  #printDoc .pd{break-after:page;page:f60}
   #printDoc .pd:last-child{break-after:auto}
-  #printDoc .ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:10px}
-  #printDoc .ph .co{font-size:15px;font-weight:700}
-  #printDoc .ph .tt{font-size:13px}
-  #printDoc .ph .no{font-size:16px;font-weight:700;text-align:right}
-  #printDoc table{width:100%;border-collapse:collapse;margin-bottom:10px}
-  #printDoc th,#printDoc td{border:1px solid #888;padding:5px 7px;text-align:left;vertical-align:top}
-  #printDoc th{background:#eee;width:26%;font-weight:600}
-  #printDoc .lst th{width:auto}
-  #printDoc h4{margin:10px 0 4px;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
-  #printDoc .box{border:1px solid #888;padding:7px;min-height:44px;white-space:pre-wrap;margin-bottom:8px}
-  #printDoc .pics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
-  #printDoc .pics img{width:100%;height:150px;object-fit:cover;border:1px solid #888}
-  #printDoc .sig{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px;break-inside:avoid}
-  #printDoc .sig div{border-top:1px solid #000;padding-top:4px;min-height:58px}
-  #printDoc .ft{margin-top:10px;font-size:10px;color:#555;display:flex;justify-content:space-between}
+  #printDoc .fh{display:grid;grid-template-columns:1fr 1fr 1fr;font-size:9px;align-items:start}
+  #printDoc .fh .co{text-align:center;font-size:15px;font-weight:700}
+  #printDoc .ftt{text-align:center;font-size:21px;font-weight:700;margin:6px 0 12px}
+  #printDoc table{border-collapse:collapse}
+  #printDoc .f60t{width:100%;table-layout:fixed}
+  #printDoc .f60t th,#printDoc .f60t td{border:1px solid #000;text-align:center;vertical-align:middle;padding:4px 3px;word-wrap:break-word}
+  #printDoc .f60t th{background:#dbeef4;font-weight:700;font-size:10px;height:32px;border-bottom:2px solid #000}
+  #printDoc .f60t .dr td{height:105px;font-size:10px}
+  #printDoc .f60t .dr td.sm{font-size:8.5px}
+  #printDoc .f60t .pr td{height:300px;border-bottom:2px solid #000;padding:10px}
+  #printDoc .pics{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+  #printDoc .pics img{height:270px;max-width:31%;object-fit:contain}
+  #printDoc .sigw{display:flex;justify-content:flex-end;margin-top:12px;padding-right:9%}
+  #printDoc .sigt th,#printDoc .sigt td{border:1px solid #000;width:90px;text-align:center;font-size:8.5px;padding:2px 4px}
+  #printDoc .sigt th{font-weight:400}
+  #printDoc .sigt td{height:52px;vertical-align:bottom;font-size:9px}
+  #printDoc .sigt td span{font-size:8px;color:#333}
+  #printDoc .fref{font-size:7.5px;color:#666;margin-top:4px}
   header.top,nav.bottom,.no-print,.fab{display:none!important}
   .print-only{display:block}
   main{padding:0!important}
@@ -320,7 +323,7 @@ const T = {
   legacyTotal:"Job lama: output direkod sebagai jumlah sahaja.", joList:"Nombor JOB (asingkan dengan ruang)", batchOpt:"- Semua / tidak pasti -",
   KG:"KG", PACK:"Pek", BAG:"Beg", CARTON:"Karton",
   guide:"Panduan Pengguna", expandAll:"Buka / tutup semua", print:"Cetak", guideIntro:"Bahagian untuk peranan anda dibuka dahulu. Peranan anda:",
-  loss:"Kerugian", lossTitle:"Laporan Kerugian Pengeluaran", reportLoss:"Lapor Kerugian", lossNo:"No. Laporan", printPdf:"Cetak / PDF", lossTitle1:"Laporan Kerugian Pengeluaran", sumTotal:"Jumlah", printedOn:"Dicetak", verifiedBy:"Disahkan oleh", occurred:"Masa kejadian",
+  loss:"Kerugian", lossTitle:"Laporan Kerugian Pengeluaran", reportLoss:"Lapor Kerugian", lossNo:"No. Laporan", l_item:"Kod item", l_bqty:"Kuantiti asal (KG)", l_cqty:"Kuantiti siap (KG)", l_trans:"No. transaksi (Misc Issue)", l_loc:"Lokasi", l_reason:"Sebab / punca", l_bnHelp:"Pilih B/N job, atau taip no. batch bahan mentah.", formHdr:"Borang laporan pembaziran (ISO)", formNo:"No. borang", formRev:"Revisi", formEff:"Tarikh berkuat kuasa", printPdf:"Cetak / PDF", lossTitle1:"Laporan Kerugian Pengeluaran", sumTotal:"Jumlah", printedOn:"Dicetak", verifiedBy:"Disahkan oleh", occurred:"Masa kejadian",
   stage:"Peringkat", lossType:"Jenis kerugian", material:"Bahan / produk", qtyLost:"Kuantiti hilang", whatHappened:"Apa yang berlaku",
   immAction:"Tindakan segera", photos:"Gambar", addPhoto:"Ambil / pilih gambar", reporter:"Dilapor oleh", noJob:"- Tiada job (cth. bahan mentah di stor) -",
   disposition:"Keputusan bahan", corrective:"Tindakan pembetulan", signOff:"Tandatangan keputusan", signedBy:"Ditandatangani oleh",
@@ -328,7 +331,7 @@ const T = {
   reportedLoss:"Kerugian dilapor", explained:"Dijelaskan", lossByType:"Ikut jenis", lossByStage:"Ikut peringkat", lossMonth:"Kerugian dilapor bulan ini",
   uploading:"Memuat naik gambar…", editReport:"Ubah laporan", dispHelp:"Hanya penyelia pengeluaran, operasi atau admin boleh menandatangani keputusan bahan.",
   MIXING:"Campuran", PACKING:"Pembungkusan", TRANSFER:"Pindahan / Stor", RAW_MATERIAL:"Bahan Mentah",
-  SPILLAGE:"Tumpahan", TORN_BAG:"Beg koyak", DAMAGED_PACK:"Pek rosak / jatuh", MACHINE_FAULT:"Kerosakan mesin", CONTAMINATION:"Pencemaran", RESIDUE:"Sisa / sapuan", OTHER:"Lain-lain",
+  WASTAGE:"Pembaziran", EXPIRED:"Tamat tempoh", SPILLAGE:"Tumpahan", TORN_BAG:"Beg koyak", DAMAGED_PACK:"Pek rosak / jatuh", MACHINE_FAULT:"Kerosakan mesin", CONTAMINATION:"Pencemaran", RESIDUE:"Sisa / sapuan", OTHER:"Lain-lain",
   DISPOSE:"Buang", REWORK:"Proses semula", QUARANTINE:"Kuarantin", RETURN_TO_STOCK:"Kembali ke stok",
   sharedPack:"JOB pembungkusan", c_project:"Projek", c_remark:"Catatan", c_cust:"Pelanggan", c_plan:"Tarikh Pelan", c_rel:"Tarikh Lepas", c_done:"Tarikh Siap", s_plan:"Pelan", s_rel:"Lepas", s_done:"Siap", c_date:"Tarikh", c_machine:"Mesin", c_product:"Produk", c_batch:"Kg × Klpk", c_total:"KG", c_jo:"JOB", c_mix:"Campuran", c_pack:"Bungkus", c_var:"Varians", c_status:"Status", none:"Tiada", today:"Hari ini", lockedPlan:"Pelan dikunci selepas pengeluaran bermula."
  },
@@ -387,7 +390,7 @@ const T = {
   legacyTotal:"Older job: output recorded as totals only.", joList:"JOB numbers (separate with spaces)", batchOpt:"- All / not sure -",
   KG:"KG", PACK:"Pack", BAG:"Bag", CARTON:"Carton",
   guide:"User Guide", expandAll:"Expand / collapse all", print:"Print", guideIntro:"Sections for your role are opened first. Your role:",
-  loss:"Losses", lossTitle:"Production Loss Reports", reportLoss:"Report Loss", lossNo:"Report No.", printPdf:"Print / PDF", lossTitle1:"Production Loss Report", sumTotal:"Total", printedOn:"Printed", verifiedBy:"Verified by", occurred:"Time of incident",
+  loss:"Losses", lossTitle:"Production Loss Reports", reportLoss:"Report Loss", lossNo:"Report No.", l_item:"Item code", l_bqty:"QTY (KG)", l_cqty:"Completed QTY (KG)", l_trans:"Trans. No (Misc Issue)", l_loc:"Location", l_reason:"Reason", l_bnHelp:"Pick the job B/N, or type the raw material batch no.", formHdr:"Wastage report form (ISO)", formNo:"Form No.", formRev:"Revision", formEff:"Effective Date", printPdf:"Print / PDF", lossTitle1:"Production Loss Report", sumTotal:"Total", printedOn:"Printed", verifiedBy:"Verified by", occurred:"Time of incident",
   stage:"Stage", lossType:"Type of loss", material:"Material / product", qtyLost:"Quantity lost", whatHappened:"What happened",
   immAction:"Immediate action", photos:"Photos", addPhoto:"Take / choose photos", reporter:"Reported by", noJob:"- No job (e.g. raw material in store) -",
   disposition:"Disposition", corrective:"Corrective action", signOff:"Sign off disposition", signedBy:"Signed off by",
@@ -395,7 +398,7 @@ const T = {
   reportedLoss:"Reported loss", explained:"Explained", lossByType:"By type", lossByStage:"By stage", lossMonth:"Reported losses this month",
   uploading:"Uploading photos…", editReport:"Edit report", dispHelp:"Only a production supervisor, operation or admin can sign off the disposition.",
   MIXING:"Mixing", PACKING:"Packing", TRANSFER:"Transfer / Store", RAW_MATERIAL:"Raw Material",
-  SPILLAGE:"Spillage", TORN_BAG:"Torn bag", DAMAGED_PACK:"Damaged / dropped pack", MACHINE_FAULT:"Machine fault", CONTAMINATION:"Contamination", RESIDUE:"Residue / sweepings", OTHER:"Other",
+  WASTAGE:"Wastage", EXPIRED:"Expired", SPILLAGE:"Spillage", TORN_BAG:"Torn bag", DAMAGED_PACK:"Damaged / dropped pack", MACHINE_FAULT:"Machine fault", CONTAMINATION:"Contamination", RESIDUE:"Residue / sweepings", OTHER:"Other",
   DISPOSE:"Dispose", REWORK:"Rework", QUARANTINE:"Quarantine", RETURN_TO_STOCK:"Return to stock",
   sharedPack:"JOB Packing", c_project:"Project", c_remark:"Remark", c_cust:"Customer", c_plan:"Plan Date", c_rel:"Release Date", c_done:"Done Date", s_plan:"Plan", s_rel:"Released", s_done:"Done", c_date:"Date", c_machine:"Machine", c_product:"Product", c_batch:"Kg × Batch", c_total:"KG", c_jo:"JOB", c_mix:"Mixed", c_pack:"Packed", c_var:"Var.", c_status:"Status", none:"None", today:"Today", lockedPlan:"Plan is locked once production starts."
  }
@@ -460,7 +463,7 @@ const UOMS = ["KG","PACK","BAG","CARTON"];
 const UOM_SHORT = {KG:"KG",PACK:"PK",BAG:"BAG",CARTON:"CTN"};
 const packText = j => j.packing_output==null ? null : (j.pack_uom && j.pack_uom!=="KG" && j.pack_qty!=null ? `${nf(j.pack_qty, j.pack_qty%1?2:0)} ${t(j.pack_uom)} × ${nf(j.pack_unit_kg, 2)} kg = ${kg(j.packing_output)}` : kg(j.packing_output));
 const LSTAGES = ["MIXING","PACKING","TRANSFER","RAW_MATERIAL"];
-const LTYPES = ["SPILLAGE","TORN_BAG","DAMAGED_PACK","MACHINE_FAULT","CONTAMINATION","RESIDUE","OTHER"];
+const LTYPES = ["WASTAGE","EXPIRED","SPILLAGE","TORN_BAG","DAMAGED_PACK","MACHINE_FAULT","CONTAMINATION","RESIDUE","OTHER"];
 const LDISP = ["DISPOSE","REWORK","QUARANTINE","RETURN_TO_STOCK"];
 const can = (...roles) => S.me && roles.includes(S.me.role);
 const perm = task => !!S.me && (S.me.role==="admin" || !!S.perms[S.me.role+"|"+task]);
@@ -492,6 +495,7 @@ async function loadAll(){
   S.losses = lR.data || [];
   S.machines = mR.data || [];
   const tg = (sR.data||[]).find(x=>x.key==="wastage_target_pct"); if(tg) S.target = Number(tg.value);
+  S.cfg = Object.fromEntries((sR.data||[]).map(x=>[x.key, x.value]));
 }
 async function fetchAllJobs(){
   let all=[], from=0; const size=1000;
@@ -1388,7 +1392,7 @@ function renderLoss(m){
   m.querySelectorAll("[data-lid]").forEach(r=>r.onclick=()=>openLoss(Number(r.dataset.lid)));
   if($("#newL")) $("#newL").onclick = () => openLossForm();
   if($("#lcsv")) $("#lcsv").onclick = () => exportLossCsv(list);
-  if($("#lprint")) $("#lprint").onclick = () => printLoss(list, false);
+  if($("#lprint")) $("#lprint").onclick = () => printLoss(list);
 }
 const toMY = ts => new Date(ts).toLocaleString("sv-SE",{timeZone:"Asia/Kuala_Lumpur"}).replace(" ","T");
 
@@ -1405,10 +1409,16 @@ async function openLoss(id){
      <dt>${t("stage")}</dt><dd>${esc(t(l.stage))}</dd>
      <dt>Job</dt><dd>${j?`<a href="#" id="toJob">${esc(j.job_no)}</a> · ${esc(j.product)}`:"-"}</dd>
      ${l.batch_no?`<dt>${t("bn")}</dt><dd>${esc(l.batch_no)} (${esc(JO(l.batch_no))})</dd>`:""}
+     ${l.item_code?`<dt>${t("l_item")}</dt><dd>${esc(l.item_code)}</dd>`:""}
+     ${l.batch_qty!=null?`<dt>${t("l_bqty")}</dt><dd>${nf(l.batch_qty, l.batch_qty%1?2:0)} KG</dd>`:""}
+     ${l.completed_qty!=null?`<dt>${t("l_cqty")}</dt><dd>${nf(l.completed_qty, l.completed_qty%1?2:0)} KG</dd>`:""}
+     ${l.trans_no?`<dt>${t("l_trans")}</dt><dd>${esc(l.trans_no)}</dd>`:""}
+     ${l.location?`<dt>${t("l_loc")}</dt><dd>${esc(l.location)}</dd>`:""}
      ${l.cmms_ref?`<dt>${t("cmmsRef")}</dt><dd>${esc(l.cmms_ref)}</dd>`:""}
      <dt>${t("reporter")}</dt><dd>${esc(l.reporter_name||"-")}</dd>
     </dl></div>
    <div class="card sec"><h3>${t("whatHappened")}</h3><div style="white-space:pre-wrap">${esc(l.description)}</div>
+    ${l.reason?`<h3 style="margin-top:10px">${t("l_reason")}</h3><div style="white-space:pre-wrap">${esc(l.reason)}</div>`:""}
     ${l.immediate_action?`<h3 style="margin-top:10px">${t("immAction")}</h3><div style="white-space:pre-wrap">${esc(l.immediate_action)}</div>`:""}</div>
    ${l.photo_paths?.length?`<div class="card sec"><h3>${t("photos")} (${l.photo_paths.length})</h3><div id="ph" class="grid2"><span class="muted">${t("loading")}</span></div></div>`:""}
    <div class="card sec"><h3>${t("disposition")}</h3>
@@ -1424,7 +1434,7 @@ async function openLoss(id){
   const bg = sheet(esc(l.report_no), body);
   if($("#toJob")) $("#toJob").onclick = e => { e.preventDefault(); openJob(j.id); };
   if($("#editL")) $("#editL").onclick = () => openLossForm(l);
-  $("#printL").onclick = () => printLoss([l], true);
+  $("#printL").onclick = () => printLoss([l]);
   if($("#signL")) $("#signL").onclick = () => {
     formSheet(`${t("signOff")} · ${esc(l.report_no)}`, [
       {k:"d",label:t("disposition"),type:"select",v:l.disposition||"DISPOSE",opts:LDISP.map(x=>[x,t(x)])},
@@ -1440,40 +1450,37 @@ async function openLoss(id){
     const ph = $("#ph"); if(ph) ph.innerHTML = (data||[]).map(d=>d.signedUrl?`<a href="${d.signedUrl}" target="_blank" rel="noopener"><img src="${d.signedUrl}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--line)"></a>`:"").join("");
   }
 }
-// Print / save as PDF: one full report, or a summary list
-async function printLoss(list, single){
+// Print / save as PDF in the ISO Wastage Report (Misc Issue) form layout: one page per report
+async function printLoss(list){
   const signed = {};
-  if(single){ const paths = list.flatMap(l=>l.photo_paths||[]); if(paths.length){ try{ const { data } = await sb.storage.from("loss-photos").createSignedUrls(paths, 3600); (data||[]).forEach((d,i)=>{ if(d.signedUrl) signed[paths[i]] = d.signedUrl; }); }catch(e){} } }
-  const now = fdt(new Date().toISOString()), who = esc(S.me?.full_name||S.me?.username||"");
-  const head = (title, no) => `<div class="ph"><div><div class="co">GFB FOOD SDN BHD</div><div class="tt">${title}</div></div><div class="no">${no||""}</div></div>`;
-  const foot = `<div class="ft"><span>${t("printedOn")}: ${now} · ${who}</span><span>GFB Production Management</span></div>`;
-  let html;
-  if(single){
-    html = list.map(l => { const j = S.jobs.find(x=>x.id===l.job_id); const R = (k,v) => `<tr><th>${k}</th><td>${v||"-"}</td></tr>`;
-      return `<div class="pd">${head(t("lossTitle1"), esc(l.report_no))}
-      <table>${R(t("lossNo"), `<b>${esc(l.report_no)}</b> &nbsp; (${esc(t(l.status))})`)}${R(t("occurred"), fdt(l.occurred_at))}
-        ${R("Job", j?`${esc(j.job_no)} · ${esc(j.product)}${j.customer?` · ${esc(j.customer)}`:""}`:"")}${l.batch_no?R(t("bn"), `${esc(l.batch_no)} (${esc(JO(l.batch_no))})`):""}
-        ${R(t("stage"), esc(t(l.stage)))}${R(t("lossType"), esc(t(l.loss_type)))}${R(t("material"), esc(l.material))}${R(t("qtyLost"), `<b>${esc(lQty(l))}</b>`)}
-        ${l.cmms_ref?R(t("cmmsRef"), esc(l.cmms_ref)):""}${R(t("reporter"), esc(l.reporter_name))}</table>
-      <h4>${t("whatHappened")}</h4><div class="box">${esc(l.description)}</div>
-      <h4>${t("immAction")}</h4><div class="box">${esc(l.immediate_action||"-")}</div>
-      ${(l.photo_paths||[]).length?`<h4>${t("photos")} (${l.photo_paths.length})</h4><div class="pics">${l.photo_paths.map(p=>signed[p]?`<img src="${signed[p]}">`:"").join("")}</div>`:""}
-      <h4>${t("disposition")}</h4>
-      <table>${R(t("disposition"), l.disposition?esc(t(l.disposition)):"")}${R(t("corrective"), esc(l.corrective_action))}${R(t("signedBy"), l.disposition_name?`${esc(l.disposition_name)} · ${fdt(l.disposition_at)}`:"")}</table>
-      <div class="sig"><div>${t("reporter")}<br><b>${esc(l.reporter_name||"")}</b></div><div>${t("signedBy")}<br><b>${esc(l.disposition_name||"")}</b></div><div>${t("verifiedBy")}<br>&nbsp;</div></div>
-      ${foot}</div>`; }).join("");
-  } else {
-    const tot = list.reduce((a,l)=>a+lKg(l),0), oth = otherUnits(list);
-    html = `<div class="pd">${head(t("lossTitle"), esc(S.lossF==="MONTH"?monLabel(S.month):S.lossF==="OPEN"?t("OPEN"):t("all")))}
-      <table class="lst"><thead><tr><th>${t("lossNo")}</th><th>${t("occurred")}</th><th>Job / B/N</th><th>${t("stage")}</th><th>${t("lossType")}</th><th>${t("material")}</th><th>${t("qtyLost")}</th><th>${t("disposition")}</th><th>${t("reporter")}</th><th>Status</th></tr></thead><tbody>
-      ${list.map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id); return `<tr><td><b>${esc(l.report_no)}</b></td><td>${fdt(l.occurred_at)}</td><td>${j?esc(j.job_no):"-"}${l.batch_no?`<br>B/N ${esc(l.batch_no)}`:""}</td><td>${esc(t(l.stage))}</td><td>${esc(t(l.loss_type))}</td><td>${esc(l.material)}</td><td style="text-align:right;white-space:nowrap">${esc(lQty(l))}</td><td>${l.disposition?esc(t(l.disposition)):"-"}</td><td>${esc(l.reporter_name||"")}</td><td>${esc(t(l.status))}</td></tr>`; }).join("")}
-      <tr><th colspan="6" style="text-align:right">${t("sumTotal")}</th><th style="text-align:right;white-space:nowrap">${nf(tot, tot%1?2:0)} KG${oth?"<br>+ "+esc(oth):""}</th><th colspan="3">${list.length}</th></tr></tbody></table>
-      ${foot}</div>`;
-  }
+  const paths = list.flatMap(l=>l.photo_paths||[]);
+  if(paths.length){ try{ const { data } = await sb.storage.from("loss-photos").createSignedUrls(paths, 3600); (data||[]).forEach((d,i)=>{ if(d.signedUrl) signed[paths[i]] = d.signedUrl; }); }catch(e){} }
+  const E = k => T.en[k] ?? k, C = S.cfg || {};
+  const MONTHS = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+  const d10 = ts => { const x = toMY(ts); return `${x.slice(8,10)}/${x.slice(5,7)}/${x.slice(0,4)}`; };
+  const q = v => v==null || v==="" ? "" : `${nf(Number(v), Number(v)%1?2:0)} KG`;
+  const br = v => esc(v||"").replace(/\n/g,"<br>");
+  const W = [5.3,25,17.7,12.7,13,13,13,14,12.6,12.9,11.9,17.3,18.7], tw = W.reduce((a,b)=>a+b,0);
+  const html = list.map(l => {
+    const j = S.jobs.find(x=>x.id===l.job_id), m = toMY(l.occurred_at);
+    const item = `${esc(l.material||"")}${l.item_code?` (${esc(l.item_code)})`:""}`;
+    const action = [l.immediate_action, l.corrective_action].filter(Boolean).join("\n");
+    const pics = (l.photo_paths||[]).filter(p=>signed[p]).map(p=>`<img src="${signed[p]}">`).join("");
+    return `<div class="pd f60">
+      <div class="fh"><div>${esc(E("formNo"))}: ${esc(C.loss_form_no||"F60")}<br>${esc(E("formRev"))}: ${esc(C.loss_form_rev||"00")}</div><div class="co">GFB FOOD SDN BHD</div><div style="text-align:right">${esc(E("formEff"))}: ${esc(C.loss_form_eff||"01 January 2024")}</div></div>
+      <div class="ftt">WASTAGE REPORT (MISC ISSUE) - ${MONTHS[Number(m.slice(5,7))-1]} ${m.slice(0,4)}</div>
+      <table class="f60t"><colgroup>${W.map(w=>`<col style="width:${(w/tw*100).toFixed(2)}%">`).join("")}</colgroup>
+       <thead><tr><th></th><th>PROBLEM</th><th>DESCRIPTION</th><th>DATE</th><th>BATCH NO</th><th>ITEM</th><th>QTY(kg)</th><th>COMPLETED QTY (kg)</th><th>WASTAGE QTY(kg)</th><th>TRANS. NO</th><th>LOCATION</th><th>REASON</th><th>ACTION</th></tr></thead>
+       <tbody><tr class="dr"><td>1</td><td>${esc(E(l.loss_type))}</td><td>${br(l.description)}</td><td>${d10(l.occurred_at)}</td><td>${esc(l.batch_no||"")}</td><td class="sm">${item}</td><td>${q(l.batch_qty)}</td><td>${q(l.completed_qty)}</td><td>${esc(nf(Number(l.qty_kg), Number(l.qty_kg)%1?2:0))} ${esc(lUom(l))}</td><td>${esc(l.trans_no||"")}</td><td>${esc(l.location||"-")}</td><td>${br(l.reason)}</td><td>${br(action)}</td></tr>
+       <tr class="pr"><td colspan="13"><div class="pics">${pics}</div></td></tr></tbody></table>
+      <div class="sigw"><table class="sigt"><tr><th>PREPARED BY</th><th>CHECKED BY</th><th>VERIFIED BY</th></tr>
+       <tr><td>${esc(l.reporter_name||"")}<br><span>${d10(l.created_at||l.occurred_at)}</span></td><td>${esc(l.disposition_name||"")}${l.disposition_at?`<br><span>${d10(l.disposition_at)}</span>`:""}</td><td></td></tr></table></div>
+      <div class="fref">${esc(l.report_no)}${j?` · ${esc(j.job_no)}`:""}${l.disposition?` · ${esc(E(l.disposition))}`:""}</div>
+    </div>`; }).join("");
   let el = document.getElementById("printDoc"); if(!el){ el = document.createElement("div"); el.id = "printDoc"; document.body.appendChild(el); }
   el.innerHTML = html;
   await Promise.all([...el.querySelectorAll("img")].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; setTimeout(r, 8000); })));
-  const oldTitle = document.title; document.title = single && list.length===1 ? `Loss Report ${list[0].report_no}` : `Loss Reports ${S.lossF==="MONTH"?S.month:""}`.trim();
+  const oldTitle = document.title; document.title = list.length===1 ? `Wastage Report ${list[0].report_no}` : `Wastage Reports ${S.lossF==="MONTH"?S.month:""}`.trim();
   document.body.classList.add("printing");
   const done = () => { document.body.classList.remove("printing"); document.title = oldTitle; window.removeEventListener("afterprint", done); };
   window.addEventListener("afterprint", done);
@@ -1499,7 +1506,11 @@ function openLossForm(l, jobId){
   const nowLocal = toMY(isEdit ? l.occurred_at : new Date().toISOString()).slice(0,16);
   const body = `<form id="lf2">
     <label class="f">Job</label><select id="l_job"><option value="">${t("noJob")}</option>${jobs.map(j=>`<option value="${j.id}" ${j.id===preJob?"selected":""}>${esc(j.job_no)} · ${esc(j.product)} · ${esc(j.customer||"")}</option>`).join("")}</select>
-    <label class="f">${t("bn")}</label><select id="l_bn"></select>
+    <div class="grid2">
+      <div><label class="f">${t("bn")}</label><input type="text" id="l_bn" list="l_bnl" maxlength="40" value="${esc(isEdit?(l.batch_no||""):"")}"><datalist id="l_bnl"></datalist></div>
+      <div><label class="f">${t("l_item")}</label><input type="text" id="l_item" maxlength="40" value="${esc(isEdit?(l.item_code||""):(pj?.item_code||""))}"></div>
+    </div>
+    <div class="muted small">${t("l_bnHelp")}</div>
     <div class="grid2">
       <div><label class="f">${t("stage")}</label><select id="l_stage">${LSTAGES.map(s=>`<option value="${s}" ${(isEdit?l.stage:(pj&&pj.status==="IN PROCESS"&&pj.mixing_output!=null?"PACKING":"MIXING"))===s?"selected":""}>${t(s)}</option>`).join("")}</select></div>
       <div><label class="f">${t("lossType")}</label><select id="l_type">${LTYPES.map(s=>`<option value="${s}" ${isEdit&&l.loss_type===s?"selected":""}>${t(s)}</option>`).join("")}</select></div>
@@ -1509,7 +1520,16 @@ function openLossForm(l, jobId){
       <div><label class="f">${t("qtyLost")}</label><div style="display:flex;gap:6px"><input type="number" id="l_qty" step="0.001" min="0.001" inputmode="decimal" value="${isEdit?l.qty_kg:""}" required style="flex:1;min-width:0"><select id="l_uom" style="width:auto" aria-label="${esc(t("uom"))}">${[...new Set([...LOSS_UOM, isEdit?lUom(l):"KG"])].map(u=>`<option${(isEdit?lUom(l):"KG")===u?" selected":""}>${u}</option>`).join("")}</select></div></div>
       <div><label class="f">${t("occurred")}</label><input type="datetime-local" id="l_time" value="${nowLocal}" required></div>
     </div>
+    <div class="grid2">
+      <div><label class="f">${t("l_bqty")}</label><input type="number" id="l_bq" step="0.001" min="0" inputmode="decimal" value="${isEdit?(l.batch_qty??""):""}"></div>
+      <div><label class="f">${t("l_cqty")}</label><input type="number" id="l_cq" step="0.001" min="0" inputmode="decimal" value="${isEdit?(l.completed_qty??""):""}"></div>
+    </div>
+    <div class="grid2">
+      <div><label class="f">${t("l_trans")}</label><input type="text" id="l_trans" maxlength="40" value="${esc(isEdit?(l.trans_no||""):"")}"></div>
+      <div><label class="f">${t("l_loc")}</label><input type="text" id="l_loc" maxlength="60" value="${esc(isEdit?(l.location||""):"")}"></div>
+    </div>
     <label class="f">${t("whatHappened")}</label><textarea id="l_desc" required>${esc(isEdit?l.description:"")}</textarea>
+    <label class="f">${t("l_reason")}</label><textarea id="l_reason">${esc(isEdit?(l.reason||""):"")}</textarea>
     <label class="f">${t("immAction")}</label><textarea id="l_act">${esc(isEdit?(l.immediate_action||""):"")}</textarea>
     <label class="f">${t("cmmsRef")}</label><input type="text" id="l_cmms" maxlength="60" placeholder="${esc(t("cmmsRefPh"))}" value="${esc(isEdit?(l.cmms_ref||""):"")}">
     <label class="f">${t("photos")} ${isEdit&&l.photo_paths?.length?`<span class="muted">(${l.photo_paths.length} ✓)</span>`:""}</label>
@@ -1519,10 +1539,12 @@ function openLossForm(l, jobId){
     <div class="grid2" style="margin-top:14px"><button type="button" class="btn ghost" id="lc">${t("cancel")}</button><button class="btn primary" id="ls">${t("save")}</button></div>
   </form>`;
   sheet(isEdit ? `${t("editReport")} · ${esc(l.report_no)}` : t("reportLoss"), body);
-  const fillBn = () => { const j=S.jobs.find(x=>x.id===Number($("#l_job").value)); const cur = isEdit ? l.batch_no : null;
-    $("#l_bn").innerHTML = `<option value="">${t("batchOpt")}</option>` + (j?(j.jo_mix||[]):[]).map(x=>`<option value="${esc(x)}" ${cur===x?"selected":""}>${t("bn")} ${esc(x)} (${esc(JO(x))})</option>`).join(""); };
+  const fillBn = () => { const j=S.jobs.find(x=>x.id===Number($("#l_job").value));
+    $("#l_bnl").innerHTML = (j?(j.jo_mix||[]):[]).map(x=>`<option value="${esc(x)}">${esc(JO(x))}</option>`).join(""); };
   fillBn();
-  $("#l_job").onchange = e => { const j=S.jobs.find(x=>x.id===Number(e.target.value)); if(j && !$("#l_mat").value) $("#l_mat").value=j.product; fillBn(); };
+  $("#l_job").onchange = e => { const j=S.jobs.find(x=>x.id===Number(e.target.value)); if(j && !$("#l_mat").value) $("#l_mat").value=j.product; if(j && j.item_code && !$("#l_item").value) $("#l_item").value=j.item_code; fillBn(); };
+  $("#l_bn").onchange = () => { const j=S.jobs.find(x=>x.id===Number($("#l_job").value)); const bn=$("#l_bn").value.trim(); if(!j || !bn || $("#l_bq").value) return;
+    const i=(j.jo_mix||[]).indexOf(bn); if(i<0) return; const b=batchesOf(j.id).find(x=>x.jo_no===bn); $("#l_bq").value = b&&b.mix_kg!=null ? b.mix_kg : planQtyAt(j,i); };
   $("#l_ph").onchange = e => { $("#l_phn").textContent = e.target.files.length ? `${e.target.files.length} 📷` : ""; };
   $("#lc").onclick = () => isEdit ? openLoss(l.id) : closeSheet();
   $("#lf2").onsubmit = async e => {
@@ -1545,8 +1567,12 @@ function openLossForm(l, jobId){
         material: $("#l_mat").value.trim().toUpperCase(), qty_kg: Number($("#l_qty").value), uom: $("#l_uom").value,
         occurred_at: new Date($("#l_time").value + ":00+08:00").toISOString(),
         description: $("#l_desc").value.trim(), immediate_action: $("#l_act").value.trim() || null, photo_paths: paths,
-        cmms_ref: $("#l_cmms").value.trim().toUpperCase() || null
+        cmms_ref: $("#l_cmms").value.trim().toUpperCase() || null,
+        item_code: $("#l_item").value.trim().toUpperCase() || null,
+        batch_qty: $("#l_bq").value==="" ? null : Number($("#l_bq").value), completed_qty: $("#l_cq").value==="" ? null : Number($("#l_cq").value),
+        trans_no: $("#l_trans").value.trim() || null, location: $("#l_loc").value.trim() || null, reason: $("#l_reason").value.trim() || null
       };
+      row.batch_no = $("#l_bn").value.trim() || null;
       const q = isEdit ? sb.from("loss_reports").update(row).eq("id", l.id) : sb.from("loss_reports").insert(row);
       const { data, error } = await q.select().single(); if(error) throw error;
       upsertLoss(data); toast(`${t("saved")}: ${data.report_no}`); openLoss(data.id); renderMainOnly();
@@ -1554,7 +1580,7 @@ function openLossForm(l, jobId){
   };
 }
 function exportLossCsv(list){
-  const cols = ["report_no","occurred_at","job_no","batch_no","stage","loss_type","material","qty_kg","uom","description","immediate_action","cmms_ref","reporter_name","disposition","corrective_action","disposition_name","disposition_at","status","photos"];
+  const cols = ["report_no","occurred_at","job_no","batch_no","item_code","stage","loss_type","material","batch_qty","completed_qty","qty_kg","uom","trans_no","location","description","reason","immediate_action","cmms_ref","reporter_name","disposition","corrective_action","disposition_name","disposition_at","status","photos"];
   const rows = [...list].sort((a,b)=>a.id-b.id).map(l=>{ const j=S.jobs.find(x=>x.id===l.job_id);
     const o = {...l, occurred_at: fdt(l.occurred_at), disposition_at: l.disposition_at?fdt(l.disposition_at):"", job_no: j?j.job_no:"", photos:(l.photo_paths||[]).length, stage:t(l.stage), loss_type:t(l.loss_type), disposition:l.disposition?t(l.disposition):""};
     return cols.map(c=>{ let v=o[c]??""; v=String(v); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; }).join(","); });
@@ -1769,6 +1795,11 @@ async function renderMore(m){
    <h3 style="margin:18px 0 8px;font-size:16px">${t("settings")}</h3>
    <div class="card" style="margin-bottom:10px">
      <div class="listitem"><span class="grow">${t("wasteTarget")}</span><input type="number" id="wt" step="0.1" min="0" value="${S.target}" style="width:90px"><button class="btn" id="wts">${t("save")}</button></div>
+     <div class="listitem" style="flex-wrap:wrap;gap:6px"><span class="grow" style="min-width:100%">${t("formHdr")}</span>
+       <label class="small muted">${t("formNo")} <input id="ff_no" value="${esc(S.cfg?.loss_form_no||"F60")}" style="width:80px"></label>
+       <label class="small muted">${t("formRev")} <input id="ff_rev" value="${esc(S.cfg?.loss_form_rev||"00")}" style="width:60px"></label>
+       <label class="small muted">${t("formEff")} <input id="ff_eff" value="${esc(S.cfg?.loss_form_eff||"01 January 2024")}" style="width:150px"></label>
+       <button class="btn" id="ffs">${t("save")}</button></div>
    </div>
    <div class="row" style="margin:16px 0 8px"><h3 class="grow" style="margin:0;font-size:16px">${t("machines")}</h3><button class="btn" id="addM">+ ${t("addMachine")}</button></div>
    <div class="card">${S.machines.map(mc=>`<div class="listitem"><span class="grow">${esc(mc.name)}</span><label class="check" style="margin:0"><input type="checkbox" data-mid="${mc.id}" ${mc.active?"checked":""}> ${t("activeUser")}</label></div>`).join("")}</div>`:""}
@@ -1789,6 +1820,8 @@ async function renderMore(m){
     if(v) S.perms[r+"|"+k] = true; else delete S.perms[r+"|"+k];
     toast(`${t(r)}: ${t("T_"+k)} ${v?"✓":"✗"}`);
   });
+  $("#ffs").onclick = async () => { const rows=[["loss_form_no",$("#ff_no").value.trim()],["loss_form_rev",$("#ff_rev").value.trim()],["loss_form_eff",$("#ff_eff").value.trim()]];
+    for(const [k,v] of rows){ const { error } = await sb.from("app_settings").update({value:v}).eq("key",k); if(error) return toast(errMsg(error),true); S.cfg[k]=v; } toast(t("saved")); };
   $("#wts").onclick = async () => { const v=Number($("#wt").value); const { error } = await sb.from("app_settings").update({value:String(v)}).eq("key","wastage_target_pct"); if(error) return toast(errMsg(error),true); S.target=v; toast(t("saved")); };
   $("#addM").onclick = () => formSheet(t("addMachine"), [{k:"n",label:t("machine"),req:true}], async v => {
     const { data, error } = await sb.from("machines").insert({name:v.n.trim().toUpperCase(), sort_order:S.machines.length+1}).select().single(); if(error) throw error;
