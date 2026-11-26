@@ -320,7 +320,7 @@ const T = {
   T_job_cancel:"Batalkan job", T_job_start:"Mula campuran", T_job_output:"Rekod output campuran & pembungkusan", T_job_done:"Tanda siap / buka semula",
   T_job_transfer:"Pindah ke stor (TO)", T_job_qc:"Rekod keputusan QC", T_job_wastage:"Isi punca pembaziran", T_job_verify:"Sahkan pembaziran",
   T_job_close:"Tutup job", T_job_remarks:"Tulis catatan", T_loss_report:"Lapor kerugian", T_loss_signoff:"Tandatangan keputusan bahan",
-  editProduct:"Ubah produk", itemCode:"Kod Item", itemHelp:"Diisi sendiri daripada job terdahulu dengan produk yang sama, jika ada.",
+  editProduct:"Ubah produk", itemCode:"Kod Item", packItemCode:"Kod Item Pembungkusan (barang siap)", c_final:"Kod Item Akhir", s_pack:"Pembungkusan", s_mix:"Campuran", itemHelp:"Diisi sendiri daripada job terdahulu dengan produk yang sama, jika ada.",
   sum:"Jumlah", jobOrder:"No. JOB", bn:"B/N", batchOut:"Output kelompok", actFG:"Rekod output barang siap", uom:"UOM", qty:"Kuantiti", unitKg:"KG seunit",
   totalKg:"Jumlah KG", fgOut:"Output Pembungkusan / Barang Siap", perBatchHelp:"Isi KG sebenar bagi setiap kelompok (B/N). Kosongkan jika belum siap.",
   adminEdit:"Ubah (Admin)", adminHelp:"Admin boleh membetulkan semua medan, termasuk job lama. Semua perubahan direkod dalam Sejarah.",
@@ -387,7 +387,7 @@ const T = {
   T_job_cancel:"Cancel job", T_job_start:"Start mixing", T_job_output:"Record mixing & packing output", T_job_done:"Mark done / reopen",
   T_job_transfer:"Transfer to store (TO)", T_job_qc:"Record QC result", T_job_wastage:"Enter wastage cause", T_job_verify:"Verify wastage",
   T_job_close:"Close job", T_job_remarks:"Write remarks", T_loss_report:"Report loss", T_loss_signoff:"Sign off disposition",
-  editProduct:"Edit product", itemCode:"Item Code", itemHelp:"Filled in from the last job with the same product, if there is one.",
+  editProduct:"Edit product", itemCode:"Item Code", packItemCode:"Packing Item Code (finished good)", c_final:"Final Item Code", s_pack:"Packing", s_mix:"Mixing", itemHelp:"Filled in from the last job with the same product, if there is one.",
   sum:"Total", jobOrder:"JOB No.", bn:"B/N", batchOut:"Batch output", actFG:"Record finished goods output", uom:"UOM", qty:"Quantity", unitKg:"KG per unit",
   totalKg:"Total KG", fgOut:"Packing / Finished Goods Output", perBatchHelp:"Enter the actual KG for each batch (B/N). Leave blank if not done yet.",
   adminEdit:"Edit (Admin)", adminHelp:"Admin can correct every field, including old jobs. All changes are recorded in History.",
@@ -679,10 +679,14 @@ function renderJobs(m){
 }
 const isDesk = () => window.matchMedia("(min-width:900px)").matches;
 const COLS = [
-  ["job_no","c_project"],["plan_date","c_plan"],["date_released","c_rel"],["date_done","c_done"],["machine","c_machine"],["product","c_product"],["customer","c_cust"],["notes","c_remark"],
+  ["job_no","c_project"],["plan_date","c_plan"],["date_released","c_rel"],["date_done","c_done"],["machine","c_machine"],["product","c_product"],["customer","c_cust"],["notes","c_remark"],["final_code","c_final"],
   ["total_planned","c_total",1],["jo","c_jo"],["mixing_output","c_mix",1],["packing_output","c_pack",1],["var","c_var",1]
 ];
+// Final item code: the packing (FG) item code when the job has packing, otherwise the mixing item code
+const hasPack = j => !j.bulk_packing && (j.jo_pack||[]).length > 0;
+const finalCode = j => hasPack(j) ? (j.pack_item_code || "") : (j.item_code || "");
 function sortVal(j,k){
+  if(k==="final_code") return finalCode(j);
   if(k==="job_no") return j.id; if(k==="var") return varPct(j) ?? -999; if(k==="status") return STEP[j.status];
   if(k==="jo") return Number((j.jo_mix||[])[0]||0);
   if(["batches","total_planned","mixing_output","packing_output"].includes(k)) return j[k]==null ? -1 : Number(j[k]);
@@ -702,7 +706,7 @@ function jobTable(rows){
   ${rows.map(j=>{ const v=varPct(j); const ov=overTarget(j);
     return `<tr data-id="${j.id}">
       <td><b>${esc(j.job_no)}</b><div style="margin-top:3px">${badge(j.status)}</div>${tags(j)?`<div style="margin-top:3px;display:flex;flex-wrap:wrap;gap:3px">${tags(j)}</div>`:""}${STEP[j.status]>=0?`<div class="steps tsteps" title="${esc(t(j.status))} (${STEP[j.status]+1}/6)">${[0,1,2,3,4,5].map(i=>`<i class="${i<=STEP[j.status]?"on":""}"></i>`).join("")}</div>`:""}</td><td>${fds(j.plan_date)}</td><td>${j.date_released?fds(j.date_released):'<span class="muted">-</span>'}</td><td>${j.date_done?fds(j.date_done):'<span class="muted">-</span>'}</td><td style="white-space:normal;min-width:80px;max-width:110px">${esc(j.machine)}</td>
-      <td class="wrapc">${esc(j.product)}${j.item_code?`<div class="muted small">${esc(j.item_code)}</div>`:""}</td><td class="wrapc" style="min-width:90px;max-width:140px">${j.customer?esc(j.customer):'<span class="muted">-</span>'}</td><td class="wrapc" style="min-width:60px">${j.notes||j.remarks?`${esc(j.notes||"")}${j.notes&&j.remarks?"<br>":""}${j.remarks?`<span class="muted small">${esc(j.remarks)}</span>`:""}`:'<span class="muted">-</span>'}</td>
+      <td class="wrapc">${esc(j.product)}${j.item_code?`<div class="muted small">${esc(j.item_code)}</div>`:""}</td><td class="wrapc" style="min-width:90px;max-width:140px">${j.customer?esc(j.customer):'<span class="muted">-</span>'}</td><td class="wrapc" style="min-width:60px">${j.notes||j.remarks?`${esc(j.notes||"")}${j.notes&&j.remarks?"<br>":""}${j.remarks?`<span class="muted small">${esc(j.remarks)}</span>`:""}`:'<span class="muted">-</span>'}</td><td class="wrapc" style="white-space:nowrap">${finalCode(j)?`<b>${esc(finalCode(j))}</b><div class="muted small">${hasPack(j)?t("s_pack"):t("s_mix")}</div>`:'<span class="muted">-</span>'}</td>
       <td class="n"><b>${nf(j.total_planned, j.total_planned%1?2:0)}</b><div class="muted small">${planText(j)}</div></td>
       <td>${esc(jo(j.jo_mix))}${packN(j)>1?`<div class="small" style="margin-top:2px"><b>P (${packN(j)}):</b>${j.jo_pack.map((x,i)=>`<div class="muted">${esc(JO(x))}${Array.isArray(j.pack_plan)&&j.pack_plan[i]?" · "+esc(kg(j.pack_plan[i])):""}</div>`).join("")}</div>`:packN(j)?`<div class="muted small">P: ${esc(j.jo_pack.map(JO).join(", "))}</div>`:""}</td>
       <td class="n">${j.mixing_output!=null?nf(j.mixing_output, j.mixing_output%1?2:0):"-"}</td>
@@ -719,6 +723,7 @@ function jobCard(j){
     ${tags(j)?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 4px">${tags(j)}</div>`:""}
     <div class="prod">${esc(j.product)}${j.item_code?` <span class="muted small" style="font-weight:500">${esc(j.item_code)}</span>`:""}</div>
     <div class="meta"><span>${t("s_plan")} <b>${fds(j.plan_date)}</b></span><span>${t("s_rel")} <b>${j.date_released?fds(j.date_released):"-"}</b></span><span>${t("s_done")} <b>${j.date_done?fds(j.date_done):"-"}</b></span></div>
+    ${finalCode(j)?`<div class="meta"><span>${t("c_final")}: <b>${esc(finalCode(j))}</b> (${hasPack(j)?t("s_pack"):t("s_mix")})</span></div>`:""}
     <div class="meta"><span>${esc(j.customer||"-")}</span><span>${esc(j.machine)}</span><span>${planText(j)} = <b>${kg(j.total_planned)}</b></span></div>
     ${st>=0?`<div class="steps">${[0,1,2,3,4,5].map(i=>`<i class="${i<=st?"on":""}"></i>`).join("")}</div>`:""}
     ${packPending(j)?`<div class="meta" style="margin-top:4px"><span class="badge s-IN_PROCESS">${t("balPending")}: ${kg(packBal(j))}</span></div>`:""}
@@ -773,6 +778,7 @@ async function openJob(id, keepScroll){
      <div style="font-size:18px;font-weight:700;margin-bottom:6px">${esc(j.product)}</div>
      <dl class="kv">
       <dt>${t("itemCode")}</dt><dd>${esc(j.item_code||"-")}</dd>
+      ${hasPack(j)?`<dt>${t("packItemCode")}</dt><dd>${esc(j.pack_item_code||"-")}</dd>`:""}
       <dt>${t("c_remark")}</dt><dd>${esc(j.notes||"-")}</dd>
       <dt>${t("machine")}</dt><dd>${esc(j.machine)}</dd>
       <dt>${t("planDate")}</dt><dd>${fd(j.plan_date)}</dd>
@@ -1089,6 +1095,8 @@ function openJobForm(j){
     <datalist id="dl_c">${customers.map(p=>`<option value="${esc(p)}">`).join("")}</datalist>
     <label class="f">${t("itemCode")}</label><input type="text" id="j_item" list="dl_i" value="${esc(j?.item_code||"")}" autocapitalize="characters">
     <datalist id="dl_i">${itemCodes.map(c=>`<option value="${esc(c)}">`).join("")}</datalist>
+    <div id="j_pitw"><label class="f">${t("packItemCode")}</label><input type="text" id="j_pitem" list="dl_pi" value="${esc(j?.pack_item_code||"")}" autocapitalize="characters">
+    <datalist id="dl_pi">${[...new Set(S.jobs.map(x=>x.pack_item_code).filter(Boolean))].sort().map(c=>`<option value="${esc(c)}">`).join("")}</datalist></div>
     <div class="muted small" style="margin-top:4px">${t("itemHelp")}</div>
     <label class="f">${t("joMix")} <span class="muted" id="j_mix_n"></span></label><div id="j_mix"></div>
     <div class="card" style="padding:10px 12px;margin-top:10px"><div class="row" style="justify-content:space-between"><span class="muted">${t("total")}</span><b id="j_total">-</b></div>
@@ -1106,7 +1114,7 @@ function openJobForm(j){
   let edPack;
   const calc = () => {
     const M = edMixR.rows(), P = edPack ? edPack.rows() : [], tot = M.reduce((a,r)=>a+r.kg,0), bulk = $("#j_bulk").checked;
-    $("#j_pnw").classList.toggle("hidden", bulk);
+    $("#j_pnw").classList.toggle("hidden", bulk); $("#j_pitw").classList.toggle("hidden", bulk);
     $("#j_total").textContent = tot ? `${kg(tot)} (${planText({batch_plan:groupPlan(M)})})` : "-";
     const ptot = P.reduce((a,r)=>a+r.kg,0);
     $("#j_mix_n").textContent = `(${M.length})`; if($("#j_pack_n")) $("#j_pack_n").textContent = `(${bulk?0:P.length})${ptot?` · ${kg(ptot)}`+(tot && Math.abs(ptot-tot)>0.005?` ≠ ${t("joMix")} ${kg(tot)}`:""):""}`;
@@ -1115,6 +1123,13 @@ function openJobForm(j){
   const edMixR = rowsEditor($("#j_mix"), mixInit, {kg:true, onChange:()=>calc(), afterFill:n=>edPack&&edPack.fillFrom(n)});
   edPack = rowsEditor($("#j_pack"), packInit.length?packInit:[{jo:"", kg:""}], {kg:true, countLabel:t("packJobs"), max:20, onChange:()=>calc()});
   $("#j_bulk").onchange=calc; calc();
+  const autoPItem = () => {
+    if($("#j_pitem").value.trim()) return;
+    const pr = $("#j_product").value.trim().toUpperCase(), cu = $("#j_customer").value.trim().toUpperCase(), ic = $("#j_item").value.trim().toUpperCase(); if(!pr) return;
+    const hit = S.jobs.find(x=>x.pack_item_code && x.product===pr && x.customer===cu && (!ic || x.item_code===ic)) || S.jobs.find(x=>x.pack_item_code && x.product===pr && x.customer===cu);
+    if(hit) $("#j_pitem").value = hit.pack_item_code;
+  };
+  ["#j_product","#j_customer","#j_item"].forEach(s=>$(s).addEventListener("change", () => setTimeout(autoPItem, 0)));
   const autoItem = () => {
     if($("#j_item").value.trim()) return;
     const pr = $("#j_product").value.trim().toUpperCase(), cu = $("#j_customer").value.trim().toUpperCase(); if(!pr) return;
@@ -1129,7 +1144,7 @@ function openJobForm(j){
     e.preventDefault(); $("#js").disabled = true;
     const row = {
       machine: $("#j_machine").value, plan_date: $("#j_date").value,
-      product: $("#j_product").value.trim().toUpperCase(), customer: $("#j_customer").value.trim().toUpperCase(), item_code: $("#j_item").value.trim().toUpperCase() || null,
+      product: $("#j_product").value.trim().toUpperCase(), customer: $("#j_customer").value.trim().toUpperCase(), item_code: $("#j_item").value.trim().toUpperCase() || null, pack_item_code: $("#j_bulk").checked ? null : ($("#j_pitem").value.trim().toUpperCase() || null),
       uom:"KG",
       bulk_packing: $("#j_bulk").checked, notes: $("#j_notes").value.trim() || null
     };
@@ -1957,7 +1972,7 @@ function editUser(u){
 }
 function exportCsv(subset){
   const src = Array.isArray(subset) ? subset : S.jobs;
-  const cols = ["job_no","machine","plan_date","item_code","product","customer","batch_qty","batches","total_planned","jo_mix","jo_pack","pack_plan","bulk_packing","status","date_released","date_mixing","date_done","mixing_output","batch_detail","date_packing","pack_qty","pack_uom","pack_unit_kg","packing_output","packing_complete","variance_kg","date_qc","qc_result","to_req_no","date_transferred","date_closed","notes","remarks","wastage_cause","wastage_action","wastage_verified_by","wastage_verified_date"];
+  const cols = ["job_no","machine","plan_date","item_code","pack_item_code","product","customer","batch_qty","batches","total_planned","jo_mix","jo_pack","pack_plan","bulk_packing","status","date_released","date_mixing","date_done","mixing_output","batch_detail","date_packing","pack_qty","pack_uom","pack_unit_kg","packing_output","packing_complete","variance_kg","date_qc","qc_result","to_req_no","date_transferred","date_closed","notes","remarks","wastage_cause","wastage_action","wastage_verified_by","wastage_verified_date"];
   const rows = [...src].sort((a,b)=>a.id-b.id).map(j=>cols.map(c=>{ let v = c==="batch_detail" ? batchesOf(j.id).map(b=>`${b.jo_no}:${b.mix_kg??""}`).join(" ") : c==="jo_mix"||c==="jo_pack" ? (j[c]||[]).map(JO) : j[c]; if(Array.isArray(v)) v=v.join(" "); if(v==null) v=""; v=String(v); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; }).join(","));
   const blob = new Blob(["﻿"+cols.join(",")+"\n"+rows.join("\n")], {type:"text/csv;charset=utf-8"});
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `GFB_Production_${today()}.csv`; a.click();
