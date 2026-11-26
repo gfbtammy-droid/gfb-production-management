@@ -1019,7 +1019,7 @@ function adminEditForm(j){
     <div class="warnbox">${t("adminHelp")}</div>
     <label class="f">Status</label><select id="a_status">${STATUSES.map(s=>`<option value="${s}" ${j.status===s?"selected":""}>${t(s)}</option>`).join("")}</select>
     <div class="grid2">${F("product",t("product"))}${F("customer",t("customer"))}</div>
-    ${F("item_code",t("itemCode"))}
+    <div class="grid2">${F("item_code",t("itemCode"))}${F("pack_item_code",t("packItemCode"))}</div>
     <div class="grid2"><div><label class="f">${t("machine")}</label><select id="a_machine">${[...new Set([j.machine,...S.machines.map(m=>m.name)])].map(m=>`<option ${m===j.machine?"selected":""}>${esc(m)}</option>`).join("")}</select></div>${F("plan_date",t("planDate"),"date")}</div>
     ${Array.isArray(j.batch_plan)&&j.batch_plan.length?`<div class="muted small" style="margin-top:8px">${t("mixedSizes")}: <b>${planText(j)}</b></div>`:`<div class="grid2">${F("batch_qty",t("batchQty"),"number")}${F("batches",t("batches"),"number")}</div>`}
     ${F("total_planned",t("total")+" (KG)","number")}
@@ -1053,7 +1053,7 @@ function adminEditForm(j){
     const val = id => { const el=$("#a_"+id); return el ? el.value.trim() : undefined; };
     const dn = id => val(id)||null, num = id => val(id)==="" ? null : Number(val(id));
     const row = {
-      status: val("status"), product: val("product").toUpperCase(), item_code: val("item_code").toUpperCase()||null, customer: val("customer").toUpperCase()||null, machine: val("machine"),
+      status: val("status"), product: val("product").toUpperCase(), item_code: val("item_code").toUpperCase()||null, pack_item_code: (val("pack_item_code")||"").trim().toUpperCase()||null, customer: val("customer").toUpperCase()||null, machine: val("machine"),
       plan_date: dn("plan_date"), batch_qty: num("batch_qty"), batches: parseInt(val("batches")), total_planned: num("total_planned"),
       jo_mix: edMix.values(), jo_pack: edPack.values(), bulk_packing: $("#a_bulk").checked,
       date_released: dn("date_released"), date_mixing: dn("date_mixing"),

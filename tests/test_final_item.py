@@ -32,3 +32,14 @@ with sync_playwright() as p:
         ctx.close()
     br.close()
 for r in res:print(*r)
+# Admin Edit has the Packing Item Code box
+with sync_playwright() as p:
+    br=p.chromium.launch();ctx=br.new_context(viewport={'width':1440,'height':900});ctx.route('**/*',h);pg=ctx.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
+    pg.add_init_script("localStorage.setItem('gfbp_lang','en')");pg.goto(O);pg.wait_for_timeout(1500)
+    pg.evaluate("adminEditForm(S.jobs.find(j=>j.id===6))");pg.wait_for_timeout(400)
+    ok2=pg.locator('#a_pack_item_code').count()==1
+    if ok2:
+        pg.fill('#a_pack_item_code','fg0606');pg.click('#as');pg.wait_for_timeout(600)
+    v=pg.evaluate("__T.job_orders.find(j=>j.id===6).pack_item_code")
+    print('PASS' if ok2 and v=='FG0606' else 'FAIL','admin edit saves packing item code',v,errs)
+    br.close()
